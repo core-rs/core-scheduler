@@ -49,7 +49,9 @@ impl NativeScheduler {
 
     /// Poll a root future on this thread while workers execute spawned tasks. The root may borrow local state and need not be `Send`.
     ///
-    /// # Panics Panics on a native task worker, where blocking would prevent task progress. Use `.await` inside tasks.
+    /// # Panics
+    ///
+    /// Panics on a native task worker, where blocking would prevent task progress. Use `.await` inside tasks.
     pub fn block_on<F: std::future::Future>(&self, future: F) -> F::Output {
         use event_listener::Listener;
         use std::{
