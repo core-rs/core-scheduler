@@ -37,7 +37,17 @@ jobs:
       - name: Run workspace tests and require complete source-region coverage
         run: cargo bake --locked test:coverage --all-targets true --all-features true
       - name: Require complete timer coverage without optional features
+        env:
+          CARGO_LLVM_COV_TARGET_DIR: target/coverage-timers-default
         run: cargo bake --locked test:coverage --package core-scheduler-timers --all-targets true
+      - name: Require complete timer coverage with the producer driver
+        env:
+          CARGO_LLVM_COV_TARGET_DIR: target/coverage-timers-driver
+        run: cargo bake --locked test:coverage --package core-scheduler-timers --all-targets true --features driver
+      - name: Require complete timer coverage with sharded queues
+        env:
+          CARGO_LLVM_COV_TARGET_DIR: target/coverage-timers-sharded
+        run: cargo bake --locked test:coverage --package core-scheduler-timers --all-targets true --features sharded
 
   msrv:
     runs-on: ubuntu-latest

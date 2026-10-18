@@ -67,8 +67,7 @@ fn sparse_dense_and_bounded_output() {
     assert_eq!(driver.poll(now + Duration::from_secs(2), &mut output), 255);
     assert_eq!(driver.next_deadline(), None);
     assert_eq!(driver.poll(now, &mut output), 0);
-    // Small incremental insertion into an existing heap, and compaction of a
-    // non-root cancelled timer alongside new submissions.
+    // Small incremental insertion into an existing heap, and compaction of a non-root cancelled timer alongside new submissions.
     let a = left.try_schedule(now + Duration::from_secs(2), 1).unwrap();
     let b = left.try_schedule(now + Duration::from_secs(3), 2).unwrap();
     driver.next_deadline();
@@ -118,8 +117,7 @@ fn staged_cancellation_does_not_compact_sparse_heap_cancellations() {
         assert!(staged.cancel());
         drop(staged);
         assert_eq!(driver.next_deadline(), Some(now));
-        // Sparse heap tombstones are retained; staged cancellations never enter
-        // the heap or turn these small flushes into whole-heap compaction.
+        // Sparse heap tombstones are retained; staged cancellations never enter the heap or turn these small flushes into whole-heap compaction.
         assert_eq!(driver.heap.len(), 2);
         assert_eq!(producer.pool.cancelled_heap.load(Ordering::Relaxed), 1);
     }
@@ -482,9 +480,7 @@ fn empty_parked_driver_wakes_on_first_submission() {
     owner.join().unwrap();
 }
 
-// Model the notification protocol, not the heap or Crossbeam internals. Release
-// publication stands in for the inbox's publication, and Loom's park token
-// stands in for std::thread::unpark. Two submissions test wake coalescing.
+// Model the notification protocol, not the heap or Crossbeam internals. Release publication stands in for the inbox's publication, and Loom's park token stands in for std::thread::unpark. Two submissions test wake coalescing.
 #[test]
 fn notification_protocol_has_no_lost_wake() {
     loom::model(|| {

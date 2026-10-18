@@ -3,10 +3,7 @@
 
 //! Worker-owned timer queues with opportunistic assistance and deadline wakes.
 //!
-//! Each queue has one mutex, reusable slots and the usual pending-buffer/heap
-//! algorithm. Helpers can collect values while the owner is stalled outside
-//! queue operations. Timer identity stays with its original queue. This module
-//! creates no threads and does not integrate with an executor.
+//! Each queue has one mutex, reusable slots and the usual pending-buffer/heap algorithm. Helpers can collect values while the owner is stalled outside queue operations. Timer identity stays with its original queue. This module creates no threads and does not integrate with an executor.
 
 use crate::timers::{Shared, lock, try_schedule_shared};
 use crate::{TimerHandle, Timers};
@@ -62,13 +59,11 @@ impl Publication {
 
     fn due(&self, now: Instant) -> bool {
         let tick = self.next.load(Ordering::Acquire);
-        // Zero includes deadlines before the epoch and cleanup requests. Treat
-        // it as immediately due even when the caller supplies an older snapshot.
+        // Zero includes deadlines before the epoch and cleanup requests. Treat it as immediately due even when the caller supplies an older snapshot.
         tick != EMPTY && (tick == 0 || now >= self.epoch + Duration::from_nanos(tick))
     }
 
-    // All writers hold their queue's mutex. A store suffices; there is no
-    // global atomic read-modify-write on registration or cancellation.
+    // All writers hold their queue's mutex. A store suffices; there is no global atomic read-modify-write on registration or cancellation.
     pub(crate) fn lower(&self, deadline: Instant) {
         let tick = self.tick(deadline);
         if tick < self.next.load(Ordering::Relaxed) {
@@ -101,10 +96,7 @@ impl Publication {
 
 /// A queue normally driven by one worker, independently of other workers.
 ///
-/// Capacity is reserved during construction. Scheduling publishes a deadline
-/// before returning, even while registrations are still in the pending buffer.
-/// Handles support remote cancellation and cloning; values need only be Send
-/// for cross-thread use. No per-timer mutex, inbox or notification allocation.
+/// Capacity is reserved during construction. Scheduling publishes a deadline before returning, even while registrations are still in the pending buffer. Handles support remote cancellation and cloning; values need only be Send for cross-thread use. No per-timer mutex, inbox or notification allocation.
 pub struct WorkerTimers<Value> {
     timers: Timers<Value>,
     publication: Arc<Publication>,
@@ -198,18 +190,14 @@ impl<Value> TimerAssist<Value> {
 
     /// A conservative published wake time, including unflushed submissions.
     ///
-    /// It may be earlier than the next live timer after cancellation. Deadlines
-    /// before queue construction are represented by the construction instant;
-    /// timers beyond the nanosecond hint's range are represented earlier.
+    /// It may be earlier than the next live timer after cancellation. Deadlines before queue construction are represented by the construction instant; timers beyond the nanosecond hint's range are represented earlier.
     pub fn next_deadline(&self) -> Option<Instant> {
         self.publication.deadline()
     }
 
     /// Collect due values or reclaim capacity without waiting for a queue lock.
     ///
-    /// None means the queue is busy. Some(0) means no work was collected. Helpers
-    /// should visit other queues after a busy result. Values are owned by the
-    /// caller on return; route wakeups to an available worker outside this call.
+    /// None means the queue is busy. Some(0) means no work was collected. Helpers should visit other queues after a busy result. Values are owned by the caller on return; route wakeups to an available worker outside this call.
     pub fn try_poll(&self, now: Instant, output: &mut Vec<Value>) -> Option<usize> {
         if output.len() == output.capacity() || !self.publication.due(now) {
             return Some(0);
@@ -239,11 +227,7 @@ impl TimerAssist<SleepWake> {
 
 /// A thread-bound waiter watching the deadline hints of several queues.
 ///
-/// Construct on the waiting thread during setup. Construction reserves watcher
-/// lists; repeated parking allocates nothing. Earlier deadlines and shutdown
-/// unpark it. Publication happens before unpark, and park tokens are never reset
-/// after inspection, so a concurrent insertion cannot be lost. Spurious wakes
-/// are permitted. Visit queues after waking; parking does not collect values.
+/// Construct on the waiting thread during setup. Construction reserves watcher lists; repeated parking allocates nothing. Earlier deadlines and shutdown unpark it. Publication happens before unpark, and park tokens are never reset after inspection, so a concurrent insertion cannot be lost. Spurious wakes are permitted. Visit queues after waking; parking does not collect values.
 pub struct TimerWaiter {
     publications: Vec<Arc<Publication>>,
     wake: Arc<Wake>,

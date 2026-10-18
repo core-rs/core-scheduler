@@ -19,7 +19,7 @@ scheduler.block_on(async {
 # Ok::<(), std::io::Error>(())
 ```
 
-Operation futures receive the scheduler and cancellation explicitly. Task handles own execution: dropping a handle requests destruction after any active poll returns. Close stops admission and wakes socket and timer waits, while preserving live task owners. Coordinate cancellation and await tasks before `shutdown().await`, which drains accepted work. Dropping the scheduler closes it without blocking the dropping thread. A task, syscall, or closure that never returns can prevent graceful shutdown.
+Operation futures receive the scheduler and cancellation explicitly. Task handles own execution: dropping a handle requests destruction after any active poll returns. Close stops admission and wakes socket and timer waits, while preserving live task owners. Coordinate cancellation and await tasks before `shutdown().await`, which drains accepted work. Dropping the scheduler closes it without blocking the dropping thread. A spawned task or blocking job must not await shutdown of its own scheduler. A task, syscall, or closure that never returns can prevent graceful shutdown.
 
 Sockets have no scheduler-instance affinity. Finish outstanding operations before exclusive close. TCP resources imported from the standard library must remain nonblocking through any external aliases.
 

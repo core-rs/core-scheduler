@@ -113,8 +113,7 @@ fn capacity_wait_rechecks_available_or_closed_state_before_sleeping() {
         if closed {
             pool.close();
         }
-        // Admission can observe a full pool, then retirement or closure can
-        // happen before this wait begins. Its final state check must not sleep.
+        // Admission can observe a full pool, then retirement or closure can happen before this wait begins. Its final state check must not sleep.
         let mut waiting = pin!(pool.wait_for_capacity(&NEVER));
         assert!(
             waiting

@@ -7,14 +7,9 @@ use std::time::Instant;
 
 /// A clonable cancellation handle for one timer.
 ///
-/// Handles share the queue's allocation and identify a reusable slot. Dropping
-/// a handle leaves its timer scheduled. Call [`cancel`](Self::cancel) explicitly,
-/// for example from a sleep future's destructor. Handles can be transferred
-/// between threads when their value is `Send`.
+/// Handles share the queue's allocation and identify a reusable slot. Dropping a handle leaves its timer scheduled. Call [`cancel`](Self::cancel) explicitly, for example from a sleep future's destructor. Handles can be transferred between threads when their value is `Send`.
 ///
-/// A completed or cancelled timer's slot remains occupied until every handle
-/// is dropped and its queue entry is reclaimed. This preserves cancellation
-/// status for clones and prevents an old handle from affecting a reused slot.
+/// A completed or cancelled timer's slot remains occupied until every handle is dropped and its queue entry is reclaimed. This preserves cancellation status for clones and prevents an old handle from affecting a reused slot.
 pub struct TimerHandle<Value> {
     pub(crate) shared: Shared<Value>,
     pub(crate) key: Key,
@@ -48,10 +43,7 @@ impl<Value> TimerHandle<Value> {
 
     /// Cancel in constant time, releasing the value immediately.
     ///
-    /// Returns `true` if cancellation claimed the value before expiry or queue
-    /// destruction. Repeated cancellation returns `false`. If expiry already
-    /// returned the value, its delivery belongs to the caller and cannot be
-    /// stopped by this handle. The value's destructor runs outside the lock.
+    /// Returns `true` if cancellation claimed the value before expiry or queue destruction. Repeated cancellation returns `false`. If expiry already returned the value, its delivery belongs to the caller and cannot be stopped by this handle. The value's destructor runs outside the lock.
     pub fn cancel(&self) -> bool {
         let value = lock(&self.shared).cancel(self.key);
         let cancelled = value.is_some();

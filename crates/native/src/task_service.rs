@@ -221,8 +221,9 @@ impl TaskService {
     pub(crate) async fn wait(&self, all: bool) {
         loop {
             event_listener::listener!(self.shared.changed => listener);
-            if self.shared.outstanding.load(Ordering::Acquire) == 0
-                && (!all || self.shared.remaining.load(Ordering::Acquire) == 0)
+            // Observe registration retirement first. After close, no new registrations can appear; its release also precedes the final runnable retirement. Reading in reverse order could combine pre-publication quiescence with post-completion registration state.
+            if (!all || self.shared.remaining.load(Ordering::Acquire) == 0)
+                && self.shared.outstanding.load(Ordering::Acquire) == 0
             {
                 return;
             }

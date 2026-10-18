@@ -8,8 +8,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll, Waker};
 use std::time::Instant;
 
-/// A wakeup collected from a sleep queue. Drop it outside timer operations to
-/// wake its task. Queue shutdown also drops wakeups outside the queue lock.
+/// A wakeup collected from a sleep queue. Drop it outside timer operations to wake its task. Queue shutdown also drops wakeups outside the queue lock.
 pub struct SleepWake(Option<Waker>);
 
 impl Drop for SleepWake {
@@ -46,19 +45,11 @@ enum Registration {
 
 /// A lazy, allocation-free sleep created by a worker queue's assistance view.
 ///
-/// Construction retains the queue and deadline without locking or reserving a
-/// slot. The first poll registers its waker; later polls replace that waker.
-/// Dropping the future cancels an existing registration without waking it.
-/// The caller must drive the queue and drop collected SleepWake values outside
-/// timer operations, including for deadlines already in the past.
+/// Construction retains the queue and deadline without locking or reserving a slot. The first poll registers its waker; later polls replace that waker. Dropping the future cancels an existing registration without waking it. The caller must drive the queue and drop collected SleepWake values outside timer operations, including for deadlines already in the past.
 ///
-/// A full queue fails the first poll with Full. Shutdown wakes registered sleeps
-/// and they resolve with Closed. Dormant sleeps observe closure on first poll.
-/// Shutdown takes precedence until a sleep is polled to completion.
-/// User-provided waker clone/drop/wake implementations may allocate separately.
+/// A full queue fails the first poll with Full. Shutdown wakes registered sleeps and they resolve with Closed. Dormant sleeps observe closure on first poll. Shutdown takes precedence until a sleep is polled to completion. User-provided waker clone/drop/wake implementations may allocate separately.
 pub struct Sleep {
-    // Retain one queue reference from construction through completion. Unlike
-    // a cloneable TimerHandle, this future uniquely owns its slot reference.
+    // Retain one queue reference from construction through completion. Unlike a cloneable TimerHandle, this future uniquely owns its slot reference.
     shared: Option<Shared<SleepWake>>,
     registration: Registration,
     deadline: Instant,
@@ -90,8 +81,7 @@ impl Future for Sleep {
     fn poll(mut self: Pin<&mut Self>, context: &mut Context<'_>) -> Poll<Self::Output> {
         match self.registration {
             Registration::Dormant => {
-                // Waker callbacks, including cloning and dropping, run outside
-                // the queue lock. Failure disarms the unused wakeup.
+                // Waker callbacks, including cloning and dropping, run outside the queue lock. Failure disarms the unused wakeup.
                 let wake = SleepWake(Some(context.waker().clone()));
                 let admission = {
                     let mut state = lock(self.shared.as_ref().unwrap());
@@ -140,8 +130,7 @@ impl Future for Sleep {
                     Some(result) => self.complete(result),
                     None => Poll::Pending,
                 };
-                // Mark completion before callbacks can panic: the slot
-                // reference has already been released under the queue lock.
+                // Mark completion before callbacks can panic: the slot reference has already been released under the queue lock.
                 drop(retired);
                 result
             }

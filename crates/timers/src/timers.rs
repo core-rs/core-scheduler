@@ -14,9 +14,7 @@ const COMPACT_MINIMUM_COUNT: usize = 128;
 const HEAPIFY_INSERT_RATIO: usize = 2;
 const NO_SLOT: usize = usize::MAX;
 
-// Heap order lets us prune an entire subtree when its root is not expired.
-// Stop counting once there are enough entries to justify rebuilding the heap.
-// Recursion uses O(log n) stack space, without allocating a traversal buffer.
+// Heap order lets us prune an entire subtree when its root is not expired. Stop counting once there are enough entries to justify rebuilding the heap. Recursion uses O(log n) stack space, without allocating a traversal buffer.
 fn count_expired(entries: &[Entry], index: usize, now: Instant, limit: usize) -> usize {
     if limit == 0 {
         return 0;
@@ -83,8 +81,7 @@ pub(crate) fn lock<Value>(shared: &Shared<Value>) -> MutexGuard<'_, State<Value>
     shared.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-// Separate worker queues' Arc counters, locks and state on platforms with
-// 128-byte cache lines. This reserves padding once per queue, not per timer.
+// Separate worker queues' Arc counters, locks and state on platforms with 128-byte cache lines. This reserves padding once per queue, not per timer.
 #[cfg_attr(feature = "sharded", repr(align(128)))]
 pub(crate) struct State<Value> {
     #[cfg(any(feature = "driver", feature = "sharded"))]
@@ -146,8 +143,7 @@ impl<Value> State<Value> {
             index
         };
         let slot = &mut self.slots[index];
-        // A slot is reused only after all handles AND queue entries are gone.
-        // Consequently wrapping cannot collide with an outstanding key.
+        // A slot is reused only after all handles AND queue entries are gone. Consequently wrapping cannot collide with an outstanding key.
         slot.generation = slot.generation.wrapping_add(1);
         slot.value = Some(value);
         slot.handles = 1;
@@ -171,9 +167,7 @@ impl<Value> State<Value> {
         if self.closed {
             return Err(value);
         }
-        // clear() temporarily owns both queue buffers while dropping values
-        // outside this lock. Reject registration until it restores them, even
-        // when existing handles keep occupied slots above the zero capacity.
+        // clear() temporarily owns both queue buffers while dropping values outside this lock. Reject registration until it restores them, even when existing handles keep occupied slots above the zero capacity.
         if self.occupied() >= self.capacity() {
             return Err(value);
         }
@@ -255,8 +249,7 @@ impl<Value> State<Value> {
     fn flush(&mut self) {
         #[cfg(feature = "sharded")]
         let capacity = self.capacity();
-        // Temporarily split field borrows to filter without allocating or
-        // taking a lock for each registration. No user data is dropped here.
+        // Temporarily split field borrows to filter without allocating or taking a lock for each registration. No user data is dropped here.
         let mut scheduled = std::mem::take(&mut self.scheduled);
         scheduled.retain(|entry| {
             if self.is_cancelled(entry.key) {
@@ -334,9 +327,7 @@ impl<Value> State<Value> {
             return 0;
         }
 
-        // Compare roughly k * log2(n) individual heap repairs with an O(n)
-        // partition and heapify. Count entries, including cancellations, only
-        // up to the crossover or the caller's available output capacity.
+        // Compare roughly k * log2(n) individual heap repairs with an O(n) partition and heapify. Count entries, including cancellations, only up to the crossover or the caller's available output capacity.
         let threshold = (self.heap.len() / (self.heap.len().ilog2() as usize + 1)).max(1);
         if count_expired(self.heap.as_slice(), 0, now, room.min(threshold)) >= threshold {
             let mut entries = std::mem::take(&mut self.heap).into_vec();
@@ -386,8 +377,7 @@ impl<Value> State<Value> {
     }
 }
 
-// Restores buffers and finishes releasing values even if one user destructor
-// panics during clear. Values are always destroyed outside the queue lock.
+// Restores buffers and finishes releasing values even if one user destructor panics during clear. Values are always destroyed outside the queue lock.
 struct Clearing<'a, Value> {
     shared: &'a Shared<Value>,
     contents: Vec<Entry>,
@@ -421,29 +411,18 @@ impl<Value> Drop for Clearing<'_, Value> {
 
 /// A batched queue of monotonic deadlines and arbitrary values.
 ///
-/// Registrations live in reusable slots. Handles share one queue allocation;
-/// there is no allocation or mutex per timer. Scheduling appends in amortized
-/// O(1); cancellation is O(1), excluding the value's destructor. Queue operations
-/// and cross-thread cancellation synchronize through one shared mutex.
+/// Registrations live in reusable slots. Handles share one queue allocation; there is no allocation or mutex per timer. Scheduling appends in amortized O(1); cancellation is O(1), excluding the value's destructor. Queue operations and cross-thread cancellation synchronize through one shared mutex.
 ///
-/// [`with_capacity`](Self::with_capacity) and [`reserve`](Self::reserve) reserve
-/// slots and both queue buffers. Within that capacity, scheduling, flushing,
-/// expiry and cancellation allocate no storage. User values and their
-/// destructors may allocate independently. [`try_schedule`](Self::try_schedule)
-/// never grows storage and returns the value when capacity is exhausted.
+/// [`with_capacity`](Self::with_capacity) and [`reserve`](Self::reserve) reserve slots and both queue buffers. Within that capacity, scheduling, flushing, expiry and cancellation allocate no storage. User values and their destructors may allocate independently. [`try_schedule`](Self::try_schedule) never grows storage and returns the value when capacity is exhausted.
 ///
-/// Capacity includes pending/heap entries and completed registrations with
-/// outstanding handles. A slot is reused once its queue entry and all handles
-/// are gone. Dropping a handle leaves its timer scheduled. Deadlines preserve
-/// `Instant` precision; equal deadlines have unspecified order.
+/// Capacity includes pending/heap entries and completed registrations with outstanding handles. A slot is reused once its queue entry and all handles are gone. Dropping a handle leaves its timer scheduled. Deadlines preserve `Instant` precision; equal deadlines have unspecified order.
 pub struct Timers<Value> {
     pub(crate) shared: Shared<Value>,
 }
 
 /// A registration-only view of the shared queue, for multi-worker comparisons.
 ///
-/// Dropping this view leaves the queue intact. The owning [`Timers`] still
-/// controls queue destruction. Available with the experimental `driver` feature.
+/// Dropping this view leaves the queue intact. The owning [`Timers`] still controls queue destruction. Available with the experimental `driver` feature.
 #[cfg(feature = "driver")]
 pub struct SharedTimerProducer<Value> {
     shared: Shared<Value>,
@@ -540,8 +519,7 @@ impl<Value> Timers<Value> {
 
     /// Schedule without allocating queue storage, returning the value when full.
     ///
-    /// Cancelled queue entries occupy slots until reclaimed by a flush or
-    /// deadline query. Outstanding handles also retain their slots after expiry.
+    /// Cancelled queue entries occupy slots until reclaimed by a flush or deadline query. Outstanding handles also retain their slots after expiry.
     pub fn try_schedule(
         &mut self,
         deadline: Instant,
@@ -552,17 +530,14 @@ impl<Value> Timers<Value> {
 
     /// Merge pending timers and reclaim sufficiently numerous cancellations.
     ///
-    /// Small batches use O(m log(n + m)) incremental insertion; large batches
-    /// and compaction use O(n + m) heapify. At least 128 entries and more than
-    /// half the heap must be cancelled to trigger compaction.
+    /// Small batches use O(m log(n + m)) incremental insertion; large batches and compaction use O(n + m) heapify. At least 128 entries and more than half the heap must be cancelled to trigger compaction.
     pub fn flush(&mut self) {
         lock(&self.shared).flush();
     }
 
     /// Earliest live deadline after flushing pending timers.
     ///
-    /// Cross-thread cancellation can invalidate the returned deadline. Drivers
-    /// should recheck the queue after waking.
+    /// Cross-thread cancellation can invalidate the returned deadline. Drivers should recheck the queue after waking.
     pub fn next_deadline(&mut self) -> Option<Instant> {
         let mut state = lock(&self.shared);
         state.flush();
@@ -578,9 +553,7 @@ impl<Value> Timers<Value> {
 
     /// Return the earliest expired value, or `None` if none is ready.
     ///
-    /// Removes cancelled entries even before their deadlines. The returned
-    /// value belongs to the caller, which can invoke callbacks or wake tasks
-    /// after releasing any outer driver lock.
+    /// Removes cancelled entries even before their deadlines. The returned value belongs to the caller, which can invoke callbacks or wake tasks after releasing any outer driver lock.
     pub fn pop_expired(&mut self, now: Instant) -> Option<Value> {
         let mut state = lock(&self.shared);
         state.flush();
@@ -597,26 +570,18 @@ impl<Value> Timers<Value> {
 
     /// Append expired values using only the output vector's spare capacity.
     ///
-    /// Returns the number appended. Neither the output nor queue storage grows.
-    /// A full output vector leaves the queue unchanged. Reserve output capacity
-    /// before calling, then process values after this method releases the lock.
+    /// Returns the number appended. Neither the output nor queue storage grows. A full output vector leaves the queue unchanged. Reserve output capacity before calling, then process values after this method releases the lock.
     ///
-    /// Values in a batch have unspecified order, and a capacity-limited batch
-    /// may leave earlier expired timers queued. Use [`pop_expired`](Self::pop_expired)
-    /// when strict deadline order is required. All returned values are claimed
-    /// under one lock; subsequent cancellation cannot stop their delivery.
+    /// Values in a batch have unspecified order, and a capacity-limited batch may leave earlier expired timers queued. Use [`pop_expired`](Self::pop_expired) when strict deadline order is required. All returned values are claimed under one lock; subsequent cancellation cannot stop their delivery.
     ///
-    /// A pruned heap traversal estimates the expired count. Small batches use
-    /// individual heap pops; large batches filter entries and heapify survivors
-    /// once. The latter takes O(n) time, including cancellation reclamation.
+    /// A pruned heap traversal estimates the expired count. Small batches use individual heap pops; large batches filter entries and heapify survivors once. The latter takes O(n) time, including cancellation reclamation.
     pub fn pop_expired_batch(&mut self, now: Instant, output: &mut Vec<Value>) -> usize {
         lock(&self.shared).pop_expired_batch(now, output)
     }
 
     /// Remove all timers and release values outside the shared queue lock.
     ///
-    /// Storage capacity is retained; outstanding handles remain queryable.
-    /// Registration through shared producers is rejected until clearing ends.
+    /// Storage capacity is retained; outstanding handles remain queryable. Registration through shared producers is rejected until clearing ends.
     pub fn clear(&mut self) {
         let (contents, scheduled) = {
             let mut state = lock(&self.shared);

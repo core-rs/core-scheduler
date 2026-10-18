@@ -287,3 +287,23 @@ fn publication_before_park_preserves_a_wake_token() {
         waiter.join().unwrap();
     });
 }
+
+#[test]
+fn live_counts_exclude_cancelled_and_collected_timers_with_retained_handles() {
+    let mut owner = WorkerTimers::with_capacity(8);
+    let now = Instant::now();
+    assert!(owner.is_empty());
+    assert_eq!(owner.len(), 0);
+    let cancelled = owner.try_schedule(now, 17).unwrap();
+    let expired = owner.try_schedule(now, 42).unwrap();
+    assert!(!owner.is_empty());
+    assert_eq!(owner.len(), 2);
+    assert!(cancelled.cancel());
+    assert_eq!(owner.len(), 1);
+    let mut output = Vec::with_capacity(8);
+    assert_eq!(owner.poll(now, &mut output), 1);
+    assert_eq!(output, [42]);
+    assert_eq!(owner.len(), 0);
+    assert!(owner.is_empty());
+    assert!(!expired.is_cancelled());
+}

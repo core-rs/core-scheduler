@@ -84,8 +84,7 @@ pub(crate) fn schedule(shared: &Arc<Shared>, runnable: Runnable) {
             shared.ready.push(runnable);
         }
     }
-    // Publication precedes the sleeping flag exchange. A worker publishes its
-    // sleeping flag before rechecking queues, so a racing wake is retained.
+    // Publication precedes the sleeping flag exchange. A worker publishes its sleeping flag before rechecking queues, so a racing wake is retained.
     shared.wake_idle(preferred);
 }
 
@@ -108,8 +107,7 @@ fn search(shared: &Shared, local: &LocalWorker, iteration: usize) -> Steal<Runna
             return Steal::Success(runnable);
         }
     }
-    // Only steal after exhausting this worker's own work. Rotate the first
-    // victim so idle workers do not always contend on worker zero.
+    // Only steal after exhausting this worker's own work. Rotate the first victim so idle workers do not always contend on worker zero.
     for offset in 0..shared.workers.len() {
         let victim = local
             .identifier
@@ -251,11 +249,9 @@ pub(crate) fn run(shared: Arc<Shared>, identifier: usize, ready: Worker<Runnable
         let runnable = if should_park {
             worker.sleeping.store(true, Ordering::SeqCst);
             shared.idle_workers.fetch_add(1, Ordering::SeqCst);
-            // Pair with the enqueuer's fence: either this search observes
-            // its queued work, or the enqueuer observes an idle worker.
+            // Pair with the enqueuer's fence: either this search observes its queued work, or the enqueuer observes an idle worker.
             std::sync::atomic::fence(Ordering::SeqCst);
-            // Recheck after publishing the sleeping flag. An unpark token
-            // remains available if work arrives immediately before park().
+            // Recheck after publishing the sleeping flag. An unpark token remains available if work arrives immediately before park().
             take_idle_runnable(finish_idle_search(
                 worker,
                 &shared.idle_workers,
@@ -285,8 +281,7 @@ pub(crate) fn run(shared: Arc<Shared>, identifier: usize, ready: Worker<Runnable
                 shared.wake_idle(UNASSIGNED_WORKER);
             }
         });
-        // Future panics become TaskError in TaskFuture. Also contain a panic
-        // propagated by task machinery so that it does not remove a worker.
+        // Future panics become TaskError in TaskFuture. Also contain a panic propagated by task machinery so that it does not remove a worker.
         crate::panic::contain(|| {
             runnable.run();
         });

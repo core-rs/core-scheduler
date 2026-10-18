@@ -104,8 +104,7 @@ fn completion_releases_the_slot_and_queue_reference_before_future_destruction() 
     assert_eq!(poll(&mut sleep, Waker::noop()), Poll::Ready(Ok(())));
     assert_eq!(Arc::strong_count(&clock.shared), references);
 
-    // Reuse while the completed future remains alive, then drop that future
-    // while holding the queue lock. It must retain neither a key nor an Arc.
+    // Reuse while the completed future remains alive, then drop that future while holding the queue lock. It must retain neither a key nor an Arc.
     let mut replacement = clock.sleep_until(now);
     assert!(poll(&mut replacement, Waker::noop()).is_pending());
     let guard = lock(&clock.shared);
@@ -262,8 +261,7 @@ fn shutdown_wakes_registered_sleeps_and_can_race_a_poll() {
     assert!(poll(&mut second, &blocker).is_pending());
     let closing = thread::spawn(move || drop(owner));
     entered_rx.recv_timeout(Duration::from_secs(2)).unwrap();
-    // Clear drops the last pending value first. Its callback stalls shutdown
-    // outside the queue lock, while the first sleep still retains its waker.
+    // Clear drops the last pending value first. Its callback stalls shutdown outside the queue lock, while the first sleep still retains its waker.
     assert_eq!(
         poll(&mut first, &waker),
         Poll::Ready(Err(SleepError::Closed))

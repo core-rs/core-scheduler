@@ -49,8 +49,7 @@ impl NativeScheduler {
 
     /// Poll a root future on this thread while workers execute spawned tasks. The root may borrow local state and need not be `Send`.
     ///
-    /// # Panics
-    /// Panics on a native task worker, where blocking would prevent task progress. Use `.await` inside tasks.
+    /// # Panics Panics on a native task worker, where blocking would prevent task progress. Use `.await` inside tasks.
     pub fn block_on<F: std::future::Future>(&self, future: F) -> F::Output {
         use event_listener::Listener;
         use std::{
@@ -138,7 +137,7 @@ impl NativeScheduler {
 
     /// Close admission and await retirement of all accepted work and tasks, including abandoned results. Pending timers fail and Unix signal delivery stops.
     ///
-    /// Coordinate application cancellation and asynchronous cleanup before calling this. Waiting for shutdown from a blocking job owned by this scheduler would wait for that same job. A syscall or closure that never returns can prevent shutdown from completing.
+    /// Coordinate application cancellation and asynchronous cleanup before calling this. A spawned task or blocking job must not await shutdown of its own scheduler, which would wait for that same task or job. A syscall or closure that never returns can prevent shutdown from completing.
     pub async fn shutdown(&self) {
         self.close();
         self.work.drain().await;
