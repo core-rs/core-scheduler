@@ -166,3 +166,40 @@ fn idle_worker_steals_remote_wakes_when_preferred_worker_is_busy() {
     assert!(matches!(search(&shared, &local, 1), Steal::Success(_)));
     assert!(matches!(search(&shared, &local, 1), Steal::Empty));
 }
+
+#[test]
+fn idle_wake_falls_back_when_the_preferred_worker_is_busy() {
+    use crate::task_service::Shared;
+    let queues = [Worker::new_fifo(), Worker::new_fifo()];
+    let shared = Shared::new(&queues);
+    let idle = &shared.workers[1];
+    idle.thread.set(std::thread::current()).unwrap();
+    idle.sleeping.store(true, Ordering::SeqCst);
+    shared.idle_workers.store(1, Ordering::SeqCst);
+
+    shared.wake_idle(0);
+
+    assert!(!idle.sleeping.load(Ordering::SeqCst));
+    assert_eq!(shared.idle_workers.load(Ordering::SeqCst), 1);
+    // A concurrent wake may clear sleeping before the worker decrements the idle count. Repeating the scan in that interval must also be harmless.
+    shared.wake_idle(0);
+    assert!(!idle.sleeping.load(Ordering::SeqCst));
+}
+
+#[test]
+fn idle_wake_prefers_the_requested_sleeping_worker() {
+    use crate::task_service::Shared;
+    let queues = [Worker::new_fifo(), Worker::new_fifo()];
+    let shared = Shared::new(&queues);
+    for worker in &shared.workers {
+        worker.thread.set(std::thread::current()).unwrap();
+        worker.sleeping.store(true, Ordering::SeqCst);
+    }
+    shared.idle_workers.store(2, Ordering::SeqCst);
+
+    shared.wake_idle(1);
+
+    assert!(shared.workers[0].sleeping.load(Ordering::SeqCst));
+    assert!(!shared.workers[1].sleeping.load(Ordering::SeqCst));
+    shared.wake_all();
+}
