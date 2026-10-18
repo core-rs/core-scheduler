@@ -29,13 +29,15 @@ jobs:
       - name: Install coverage tool
         run: cargo install cargo-llvm-cov --locked
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - name: Check API documentation
         env:
           RUSTDOCFLAGS: -D warnings
-        run: cargo doc --workspace --no-deps --locked
-      - name: Run tests and require complete source-region coverage
-        run: cargo bake --locked test:coverage --all-targets true
+        run: cargo doc --workspace --all-features --no-deps --locked
+      - name: Run workspace tests and require complete source-region coverage
+        run: cargo bake --locked test:coverage --all-targets true --all-features true
+      - name: Require complete timer coverage without optional features
+        run: cargo bake --locked test:coverage --package core-scheduler-timers --all-targets true
 
   msrv:
     runs-on: ubuntu-latest
@@ -43,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.85.0
-      - run: cargo test --locked --workspace --exclude core-scheduler-bake
+      - run: cargo test --locked --workspace --all-features --exclude core-scheduler-bake
 
   test-result:
     if: always()

@@ -10,7 +10,14 @@ readme = "readme.md"
 include = ["src/**", "context/**", "Cargo.toml", "readme.md", "license.md", "releases.md"]
 
 [workspace]
-members = ["bake", "crates/conformance", "crates/direct", "crates/tokio"]
+members = [
+    "bake",
+    "crates/conformance",
+    "crates/direct",
+    "crates/tokio",
+    "crates/native",
+    "crates/timers",
+]
 resolver = "3"
 
 [workspace.metadata.bake]

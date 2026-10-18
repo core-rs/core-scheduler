@@ -4,12 +4,14 @@ Explicit scheduler capabilities for reusable Rust protocol libraries. Applicatio
 
 The root crate defines interfaces and runtime-independent support. It contains no executor, reactor, operating-system I/O implementation, or runtime adapter. The initial API is extracted from [Socketry](https://github.com/core-rs/socketry-rust), and is not yet published to crates.io.
 
-The workspace also contains three companion crates, released together with the interface:
+The workspace also contains five companion crates, released together with the interface:
 
 - [`core-scheduler-conformance`](crates/conformance/readme.md): reusable capability-specific assertions for backend development dependencies.
 - [`core-scheduler-direct`](crates/direct/readme.md): reference implementations of tasks, clocks, native address resolution, file/socket operations, and platform-supported signals and filesystem extensions, with explicit service ownership and bounded syscall admission.
-
 - [`core-scheduler-tokio`](crates/tokio/readme.md): an adapter for an explicitly selected Tokio runtime, preserving owning task handles, owned I/O, cancellation, and bounded native-work admission.
+
+- [`core-scheduler-native`](crates/native/readme.md): Socketry's work-stealing executor and native readiness I/O, with Core ownership and shutdown semantics.
+- [`core-scheduler-timers`](crates/timers/readme.md): runtime-independent batched timers, reusable sleep registrations, and deadline notifications.
 
 ## Explicit operation context
 
@@ -75,7 +77,7 @@ Install the launcher with `cargo install bake --locked`. The private `bake/` wor
 cargo bake --locked test:coverage --all-targets true
 ```
 
-The tests cover runtime-independent support, generic composition, reusable conformance assertions, and the Direct and Tokio backends.
+The tests cover runtime-independent support, generic composition, reusable conformance assertions, and the Direct, Tokio, and Native backends.
 
 ## Contributing
 

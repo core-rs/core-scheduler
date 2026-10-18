@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `core-scheduler-native`, porting Socketry's work-stealing executor and readiness I/O with owned operations, explicit cancellation, bounded blocking services, and asynchronous shutdown.
+- Extract `core-scheduler-timers` with reserved timer storage, constant-time cancellation, batched expiry, and reusable sleep registrations.
+
 - Rename `protocol-scheduler` and its companion crates to the `core-scheduler` family; Rust imports now use `core_scheduler`, `core_scheduler_conformance`, `core_scheduler_direct`, and `core_scheduler_tokio`.
 - Contain native-worker and queued-capture panic payloads whose destructors panic, preserving worker capacity and shutdown progress in Direct and Tokio.
 - Add `core-scheduler-tokio` with explicit runtime selection, owning tasks, clocks, socket/file operations, native resolution, bounded blocking work, and platform-supported signals and filesystem extensions.

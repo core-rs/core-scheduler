@@ -1,0 +1,19 @@
+[package]
+name = "core-scheduler-timers"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+repository = "https://github.com/core-rs/core-scheduler"
+description = "Reusable batched monotonic timers with constant-time cancellation"
+readme = "readme.md"
+
+[features]
+driver = ["dep:crossbeam-queue"]
+sharded = []
+
+[dependencies]
+crossbeam-queue = { version = "0.3.13", optional = true }
+
+[dev-dependencies]
+loom = "0.7.2"
