@@ -125,3 +125,69 @@ fn transient_would_block_retries_with_the_requested_readiness_direction() {
         })
     });
 }
+
+#[cfg(unix)]
+#[test]
+fn registration_is_deferred_until_waiting_and_reused_after_cancellation() {
+    use core_scheduler::*;
+    use futures_lite::future::{block_on, poll_once};
+    use std::io::Write;
+    crate::test_support::run(|| {
+        block_on(async {
+            let scheduler = crate::test_support::scheduler();
+            let never = Cancellation::never();
+            let socket = scheduler
+                .socket_open(SocketDomain::Ipv4, SocketType::Stream, None, &never)
+                .await
+                .unwrap();
+            assert!(socket.inner.registration.get().is_none());
+            assert_eq!(Arc::strong_count(&socket.inner.socket), 1);
+            // Linux reports hangup on an unconnected stream. Observe native readiness without letting Tokio cache those permanent closed bits.
+            #[cfg(target_os = "linux")]
+            for interest in [Interest::Readable, Interest::Writable] {
+                scheduler
+                    .socket_wait(&socket, interest, &never)
+                    .await
+                    .unwrap();
+                assert!(socket.inner.registration.get().is_none());
+            }
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            scheduler
+                .socket_connect(&socket, listener.local_addr().unwrap().into(), &never)
+                .await
+                .unwrap();
+            let (mut peer, _) = listener.accept().unwrap();
+            let token = Cancellation::new();
+            let mut target = [0x5a];
+            let mut receiving = Box::pin(scheduler.socket_recv_poll(
+                &socket,
+                &mut target,
+                SocketRecvFlags::default(),
+                &token,
+            ));
+            assert!(poll_once(&mut receiving).await.is_none());
+            let registration = socket.inner.registration.get().unwrap() as *const _;
+            assert_eq!(Arc::strong_count(&socket.inner.socket), 2);
+            token.cancel();
+            assert!(matches!(receiving.await, Err(OperationError::Cancelled(_))));
+            assert_eq!(target, [0x5a]);
+            peer.write_all(b"x").unwrap();
+            assert_eq!(
+                scheduler
+                    .socket_recv_poll(&socket, &mut target, SocketRecvFlags::default(), &never)
+                    .await
+                    .unwrap(),
+                1
+            );
+            assert_eq!(target, *b"x");
+            assert_eq!(
+                socket.inner.registration.get().unwrap() as *const _,
+                registration
+            );
+            let weak = Arc::downgrade(&socket.inner.socket);
+            scheduler.socket_close(socket).await.unwrap();
+            assert_eq!(weak.strong_count(), 0);
+            scheduler.shutdown().await;
+        });
+    });
+}

@@ -6,14 +6,50 @@ use std::{io, net::SocketAddr, sync::Arc};
 use tokio::runtime::{Handle, Id};
 
 #[cfg(unix)]
-type RegisteredSocket = tokio::io::unix::AsyncFd<socket2::Socket>;
+#[derive(Debug)]
+pub(crate) struct RegisteredSocket {
+    socket: Arc<socket2::Socket>,
+    runtime: Handle,
+    registration: tokio::sync::OnceCell<tokio::io::unix::AsyncFd<Arc<socket2::Socket>>>,
+}
+
+#[cfg(unix)]
+impl RegisteredSocket {
+    fn new(runtime: &Handle, socket: socket2::Socket) -> Self {
+        Self {
+            socket: Arc::new(socket),
+            runtime: runtime.clone(),
+            registration: tokio::sync::OnceCell::new(),
+        }
+    }
+
+    fn get_ref(&self) -> &socket2::Socket {
+        &self.socket
+    }
+
+    fn into_inner(self) -> socket2::Socket {
+        drop(self.registration);
+        Arc::try_unwrap(self.socket).expect("socket registration releases its private socket owner")
+    }
+
+    async fn registration(&self) -> io::Result<&tokio::io::unix::AsyncFd<Arc<socket2::Socket>>> {
+        self.registration
+            .get_or_try_init(|| async {
+                let _scope = self.runtime.enter();
+                // SAFETY: Both this wrapper and the registration own the same socket. No operation can close or replace its descriptor while registered, including if the wrapper or a pending future is forgotten.
+                unsafe { tokio::io::unix::AsyncFd::register(Arc::clone(&self.socket)) }
+                    .map_err(io::Error::from)
+            })
+            .await
+    }
+}
 
 #[cfg(windows)]
 type RegisteredSocket = async_io::Async<socket2::Socket>;
 
-/// A nonblocking socket registered with the adapter's Tokio runtime.
+/// A nonblocking socket associated with the adapter's Tokio runtime.
 ///
-/// A descriptor can represent an unconnected, bound, listening, connected, or datagram socket. It is deliberately not `Clone`; operation futures borrow it, and accepted shutdown jobs privately retain its registration until completion. Explicit close consumes exclusive ownership.
+/// A descriptor can represent an unconnected, bound, listening, connected, or datagram socket. Unix readiness registration is deferred until an operation needs to wait, so an unconnected socket cannot retain stale closed readiness after connecting or listening. It is deliberately not `Clone`; operation futures borrow it, and accepted shutdown jobs privately retain its registration until completion. Explicit close consumes exclusive ownership.
 pub struct TokioSocket {
     pub(crate) inner: Arc<RegisteredSocket>,
     runtime: Id,
@@ -28,9 +64,7 @@ impl TokioSocket {
             |runtime, socket| {
                 #[cfg(unix)]
                 {
-                    let _scope = runtime.enter();
-                    // SAFETY: This wrapper owns the socket and exposes no operation which can close or replace its descriptor while registered, including when the wrapper is forgotten.
-                    unsafe { RegisteredSocket::register(socket) }.map_err(io::Error::from)
+                    Ok(RegisteredSocket::new(runtime, socket))
                 }
 
                 #[cfg(windows)]
@@ -103,8 +137,7 @@ impl TokioSocket {
     where
         Operation: FnMut(&socket2::Socket) -> io::Result<Output> + Send,
     {
-        // Try the syscall before waiting so invalid socket states return their
-        // immediate OS error instead of waiting for readiness that cannot occur.
+        // Try the syscall before registration or waiting. In particular, Linux can report EPOLLHUP for an unconnected TCP socket; Tokio retains closed readiness permanently, which would spin after the socket later connects and a syscall returns WouldBlock.
         let result = operation(self.get_ref());
         if !matches!(&result, Err(error) if error.kind() == io::ErrorKind::WouldBlock) {
             return result;
@@ -117,6 +150,8 @@ impl TokioSocket {
                 Interest::Writable => tokio::io::Interest::WRITABLE,
             };
             self.inner
+                .registration()
+                .await?
                 .async_io(interest, |_| operation(self.inner.get_ref()))
                 .await
         }

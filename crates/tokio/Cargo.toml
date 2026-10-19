@@ -13,7 +13,7 @@ core-scheduler = { path = "../..", version = "=0.0.0" }
 event-listener = "5.4.2"
 futures-channel = "0.3.31"
 socket2 = { version = "0.6.3", features = ["all"] }
-tokio = { version = "1.53.3", features = ["rt", "net", "time"] }
+tokio = { version = "1.53.3", features = ["rt", "net", "time", "sync"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

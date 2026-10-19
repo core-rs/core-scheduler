@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Defer Unix Tokio socket readiness registration until I/O needs to wait, avoiding stale unconnected TCP hangup events which could make a later full-queue send spin indefinitely.
 - Add optional borrowed recv/send and message `_poll` capabilities with stack-buffer support, explicit cancellation, and shared conformance suites in Direct, Tokio, and Native. Windows attempts explicitly enable nonblocking mode.
 
 - Add `core-scheduler-native`, porting Socketry's work-stealing executor and readiness I/O with owned operations, explicit cancellation, bounded blocking services, and asynchronous shutdown.

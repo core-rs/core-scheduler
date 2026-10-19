@@ -424,6 +424,23 @@ fn prepared_message_io_reuses_vectors_and_payload_without_fresh_allocations() {
         &scheduler,
         SocketDomain::Ipv4,
     ));
+    // Readiness registration is backend setup; prepare it before measuring repeated transfers.
+    for socket in [&client, &server] {
+        let token = Cancellation::new();
+        let mut scratch = [0];
+        let mut waiting = pin!(scheduler.socket_recv_poll(
+            socket,
+            &mut scratch,
+            SocketRecvFlags::default(),
+            &token,
+        ));
+        assert!(block_on(poll_once(&mut waiting)).is_none());
+        token.cancel();
+        assert!(matches!(
+            block_on(waiting),
+            Err(OperationError::Cancelled(_))
+        ));
+    }
     let token = Cancellation::new();
     let mut message = SocketMessage {
         buffers: IoBuffers::new([vec![7; 8]]),
@@ -468,15 +485,26 @@ fn stopped_runtime_socket_registration_reports_an_error() {
         .unwrap();
     let scheduler = TokioScheduler::new(runtime.handle().clone());
     drop(runtime);
-    assert!(
-        block_on(scheduler.socket_open(
-            SocketDomain::Ipv4,
-            SocketType::Stream,
-            None,
-            &Cancellation::never()
-        ))
-        .is_err()
-    );
+    // Socket creation does not need readiness; a registration failure belongs to the first operation which waits.
+    let never = Cancellation::never();
+    let socket =
+        block_on(scheduler.socket_open(SocketDomain::Ipv4, SocketType::Datagram, None, &never))
+            .unwrap();
+    block_on(scheduler.socket_bind(&socket, "127.0.0.1:0".parse().unwrap(), &never)).unwrap();
+    let mut target = [0x5a];
+    for _ in 0..2 {
+        assert!(matches!(
+            block_on(scheduler.socket_recv_poll(
+                &socket,
+                &mut target,
+                SocketRecvFlags::default(),
+                &never
+            )),
+            Err(OperationError::Io(_))
+        ));
+        assert_eq!(target, [0x5a]);
+    }
+    block_on(scheduler.socket_close(socket)).unwrap();
     block_on(scheduler.shutdown());
 }
 
@@ -590,84 +618,87 @@ fn borrowed_operations_reject_closed_schedulers_and_preserve_storage_on_errors()
 #[cfg(unix)]
 #[test]
 fn borrowed_sends_preserve_short_counts_and_cancel_when_the_send_queue_is_full() {
-    use std::io::IoSlice;
-    for message in [false, true] {
-        let scheduler = scheduler(1);
-        let (client, server) = block_on(core_scheduler_conformance::socket::stream_pair(
-            &scheduler,
-            SocketDomain::Ipv4,
-        ));
-        let client_socket = client.get_ref();
-        let server_socket = server.get_ref();
-        client_socket.set_send_buffer_size(4096).unwrap();
-        server_socket.set_recv_buffer_size(4096).unwrap();
-        let payload = vec![7; 4 * 1024 * 1024];
-        let never = Cancellation::never();
-        let count = if message {
-            block_on(scheduler.socket_sendmsg_poll(
-                &client,
-                &[IoSlice::new(&payload[..100]), IoSlice::new(&payload[100..])],
-                None,
-                SocketSendFlags::default(),
-                &never,
-            ))
-            .unwrap()
-        } else {
-            block_on(scheduler.socket_send_poll(
-                &client,
-                &payload,
-                SocketSendFlags::default(),
-                &never,
-            ))
-            .unwrap()
-        };
-        assert!(
-            count > 0 && count < payload.len(),
-            "fixture must force a short send"
-        );
-        // Saturate both windows and the sender's queue before polling the borrowed future. The peer deliberately never reads.
-        let deadline = std::time::Instant::now() + TIMEOUT;
-        loop {
+    crate::test_support::run(|| {
+        use std::io::IoSlice;
+        for message in [false, true] {
+            let scheduler = scheduler(1);
+            let (client, server) = block_on(core_scheduler_conformance::socket::stream_pair(
+                &scheduler,
+                SocketDomain::Ipv4,
+            ));
+            let client_socket = client.get_ref();
+            let server_socket = server.get_ref();
+            client_socket.set_send_buffer_size(4096).unwrap();
+            server_socket.set_recv_buffer_size(4096).unwrap();
+            let payload = vec![7; 4 * 1024 * 1024];
+            let never = Cancellation::never();
+            let count = if message {
+                block_on(scheduler.socket_sendmsg_poll(
+                    &client,
+                    &[IoSlice::new(&payload[..100]), IoSlice::new(&payload[100..])],
+                    None,
+                    SocketSendFlags::default(),
+                    &never,
+                ))
+                .unwrap()
+            } else {
+                block_on(scheduler.socket_send_poll(
+                    &client,
+                    &payload,
+                    SocketSendFlags::default(),
+                    &never,
+                ))
+                .unwrap()
+            };
             assert!(
-                std::time::Instant::now() < deadline,
-                "send queue did not fill"
+                count > 0 && count < payload.len(),
+                "fixture must force a short send"
             );
-            let result = socket_io::send_poll(client_socket, &payload, SocketSendFlags::default());
-            if matches!(result, Err(ref error) if error.kind() == io::ErrorKind::WouldBlock) {
-                let token = Cancellation::new();
-                let vectors = [IoSlice::new(&payload)];
-                let cancelled = if message {
-                    cancel_pending_send(
-                        scheduler.socket_sendmsg_poll(
-                            &client,
-                            &vectors,
-                            None,
-                            SocketSendFlags::default(),
+            // Saturate both windows and the sender's queue before polling the borrowed future. The peer deliberately never reads.
+            let deadline = std::time::Instant::now() + TIMEOUT;
+            loop {
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "send queue did not fill"
+                );
+                let result =
+                    socket_io::send_poll(client_socket, &payload, SocketSendFlags::default());
+                if matches!(result, Err(ref error) if error.kind() == io::ErrorKind::WouldBlock) {
+                    let token = Cancellation::new();
+                    let vectors = [IoSlice::new(&payload)];
+                    let cancelled = if message {
+                        cancel_pending_send(
+                            scheduler.socket_sendmsg_poll(
+                                &client,
+                                &vectors,
+                                None,
+                                SocketSendFlags::default(),
+                                &token,
+                            ),
                             &token,
-                        ),
-                        &token,
-                    )
-                } else {
-                    cancel_pending_send(
-                        scheduler.socket_send_poll(
-                            &client,
-                            &payload,
-                            SocketSendFlags::default(),
+                        )
+                    } else {
+                        cancel_pending_send(
+                            scheduler.socket_send_poll(
+                                &client,
+                                &payload,
+                                SocketSendFlags::default(),
+                                &token,
+                            ),
                             &token,
-                        ),
-                        &token,
-                    )
-                };
-                if cancelled {
-                    break;
+                        )
+                    };
+                    if cancelled {
+                        break;
+                    }
+                    continue;
                 }
-                continue;
+                assert!(result.unwrap() > 0);
             }
-            assert!(result.unwrap() > 0);
+            assert!(payload.iter().all(|byte| *byte == 7));
+            block_on(scheduler.shutdown());
         }
-        assert!(payload.iter().all(|byte| *byte == 7));
-        block_on(scheduler.shutdown());
-    }
+    });
 }
 
 #[cfg(unix)]
