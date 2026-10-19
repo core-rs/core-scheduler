@@ -366,13 +366,16 @@ const POLL_FLAGS: i32 = 0;
 #[cfg(windows)]
 fn poll_nonblocking(socket: &Socket) -> io::Result<()> {
     #[cfg(not(test))]
-    let result = socket.set_nonblocking(true);
+    {
+        socket.set_nonblocking(true)
+    }
     #[cfg(test)]
-    let result = tests::NONBLOCKING_ERROR.with(|slot| match slot.take() {
-        Some(error) => Err(io::Error::from(error)),
-        None => socket.set_nonblocking(true),
-    });
-    result
+    {
+        tests::NONBLOCKING_ERROR.with(|slot| match slot.take() {
+            Some(error) => Err(io::Error::from(error)),
+            None => socket.set_nonblocking(true),
+        })
+    }
 }
 
 pub(crate) fn recv_poll(

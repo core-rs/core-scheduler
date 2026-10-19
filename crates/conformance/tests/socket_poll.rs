@@ -29,7 +29,7 @@ impl SocketSendPoll for IgnoresCancellation {
         _: &Cancellation,
     ) -> OperationResult<usize> {
         if self.0 {
-            Err(io::ErrorKind::PermissionDenied.into())
+            Err(io::Error::from(io::ErrorKind::PermissionDenied).into())
         } else {
             Ok(buffer.len())
         }

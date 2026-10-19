@@ -432,10 +432,12 @@ fn every_borrowed_attempt_propagates_nonblocking_setup_failure_before_io() {
 }
 
 // A zero-initialized virtual mapping exercises real slice lengths beyond the portable native limit without touching or allocating physical pages for the payload.
+#[cfg(target_pointer_width = "64")]
 struct LargeBuffer {
     pointer: *mut u8,
     length: usize,
 }
+#[cfg(target_pointer_width = "64")]
 impl LargeBuffer {
     fn new() -> Self {
         let length = i32::MAX as usize + 1;
@@ -475,6 +477,7 @@ impl LargeBuffer {
         unsafe { std::slice::from_raw_parts_mut(self.pointer, self.length) }
     }
 }
+#[cfg(target_pointer_width = "64")]
 impl Drop for LargeBuffer {
     fn drop(&mut self) {
         #[cfg(unix)]
@@ -495,6 +498,7 @@ impl Drop for LargeBuffer {
     }
 }
 
+#[cfg(target_pointer_width = "64")]
 #[test]
 fn borrowed_message_lengths_are_validated_before_native_access() {
     let socket = open(SocketDomain::Ipv4, SocketType::Datagram, None).unwrap();
