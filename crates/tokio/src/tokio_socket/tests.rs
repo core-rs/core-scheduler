@@ -153,7 +153,7 @@ fn registration_is_deferred_until_waiting_and_reused_after_cancellation() {
             }
             let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
             scheduler
-                .socket_connect(&socket, listener.local_addr().unwrap().into(), &never)
+                .socket_connect(&socket, listener.local_addr().unwrap(), &never)
                 .await
                 .unwrap();
             let (mut peer, _) = listener.accept().unwrap();
