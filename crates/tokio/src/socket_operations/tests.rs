@@ -506,3 +506,185 @@ fn socket_registration_uses_the_selected_runtime_under_another_ambient_host() {
         block_on(scheduler.shutdown());
     });
 }
+
+#[test]
+fn borrowed_operations_reject_closed_schedulers_and_preserve_storage_on_errors() {
+    use std::io::{IoSlice, IoSliceMut};
+    let scheduler = scheduler(1);
+    let socket = socket();
+    let never = Cancellation::never();
+    let mut target = [0x5a; 4];
+    // An unconnected datagram send must report the immediate native error.
+    assert!(matches!(
+        block_on(scheduler.socket_send_poll(&socket, b"x", SocketSendFlags::default(), &never)),
+        Err(OperationError::Io(_))
+    ));
+    assert!(matches!(
+        block_on(scheduler.socket_sendmsg_poll(
+            &socket,
+            &[IoSlice::new(b"x")],
+            None,
+            SocketSendFlags::default(),
+            &never
+        )),
+        Err(OperationError::Io(_))
+    ));
+    let address: SocketAddress = "127.0.0.1:0".parse().unwrap();
+    socket.get_ref().bind(&address.into()).unwrap();
+    let mut pending = Box::pin(scheduler.socket_recv_poll(
+        &socket,
+        &mut target,
+        SocketRecvFlags::default(),
+        &never,
+    ));
+    assert!(block_on(poll_once(&mut pending)).is_none());
+    scheduler.close();
+    assert_eq!(
+        block_on(pending).unwrap_err().kind(),
+        io::ErrorKind::BrokenPipe
+    );
+    assert_eq!(
+        block_on(scheduler.socket_recv_poll(
+            &socket,
+            &mut target,
+            SocketRecvFlags::default(),
+            &never
+        ))
+        .unwrap_err()
+        .kind(),
+        io::ErrorKind::BrokenPipe
+    );
+    assert_eq!(
+        block_on(scheduler.socket_recvmsg_poll(
+            &socket,
+            &mut [IoSliceMut::new(&mut target)],
+            SocketRecvFlags::default(),
+            &never
+        ))
+        .unwrap_err()
+        .kind(),
+        io::ErrorKind::BrokenPipe
+    );
+    assert_eq!(
+        block_on(scheduler.socket_send_poll(&socket, b"x", SocketSendFlags::default(), &never))
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::BrokenPipe
+    );
+    assert_eq!(
+        block_on(scheduler.socket_sendmsg_poll(
+            &socket,
+            &[IoSlice::new(b"x")],
+            None,
+            SocketSendFlags::default(),
+            &never
+        ))
+        .unwrap_err()
+        .kind(),
+        io::ErrorKind::BrokenPipe
+    );
+    assert_eq!(target, [0x5a; 4]);
+    block_on(scheduler.shutdown());
+}
+
+#[cfg(unix)]
+#[test]
+fn borrowed_sends_preserve_short_counts_and_cancel_when_the_send_queue_is_full() {
+    use std::io::IoSlice;
+    for message in [false, true] {
+        let scheduler = scheduler(1);
+        let (client, server) = block_on(core_scheduler_conformance::socket::stream_pair(
+            &scheduler,
+            SocketDomain::Ipv4,
+        ));
+        let client_socket = client.get_ref();
+        let server_socket = server.get_ref();
+        client_socket.set_send_buffer_size(4096).unwrap();
+        server_socket.set_recv_buffer_size(4096).unwrap();
+        let payload = vec![7; 4 * 1024 * 1024];
+        let never = Cancellation::never();
+        let count = if message {
+            block_on(scheduler.socket_sendmsg_poll(
+                &client,
+                &[IoSlice::new(&payload[..100]), IoSlice::new(&payload[100..])],
+                None,
+                SocketSendFlags::default(),
+                &never,
+            ))
+            .unwrap()
+        } else {
+            block_on(scheduler.socket_send_poll(
+                &client,
+                &payload,
+                SocketSendFlags::default(),
+                &never,
+            ))
+            .unwrap()
+        };
+        assert!(
+            count > 0 && count < payload.len(),
+            "fixture must force a short send"
+        );
+        // Saturate both windows and the sender's queue before polling the borrowed future. The peer deliberately never reads.
+        let deadline = std::time::Instant::now() + TIMEOUT;
+        let token = Cancellation::new();
+        loop {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "send queue did not fill"
+            );
+            let result = socket_io::send_poll(client_socket, &payload, SocketSendFlags::default());
+            if matches!(result, Err(ref error) if error.kind() == io::ErrorKind::WouldBlock) {
+                let vectors = [IoSlice::new(&payload)];
+                let cancelled = if message {
+                    cancel_pending_send(
+                        scheduler.socket_sendmsg_poll(
+                            &client,
+                            &vectors,
+                            None,
+                            SocketSendFlags::default(),
+                            &token,
+                        ),
+                        &token,
+                    )
+                } else {
+                    cancel_pending_send(
+                        scheduler.socket_send_poll(
+                            &client,
+                            &payload,
+                            SocketSendFlags::default(),
+                            &token,
+                        ),
+                        &token,
+                    )
+                };
+                if cancelled {
+                    break;
+                }
+                continue;
+            }
+            assert!(result.unwrap() > 0);
+        }
+        assert!(payload.iter().all(|byte| *byte == 7));
+        block_on(scheduler.shutdown());
+    }
+}
+
+#[cfg(unix)]
+fn cancel_pending_send(
+    future: impl std::future::Future<Output = OperationResult<usize>>,
+    token: &Cancellation,
+) -> bool {
+    let mut sending = std::pin::pin!(future);
+    if let Some(result) = block_on(poll_once(&mut sending)) {
+        assert!(result.unwrap() > 0);
+        false
+    } else {
+        token.cancel();
+        assert!(matches!(
+            block_on(sending),
+            Err(OperationError::Cancelled(_))
+        ));
+        true
+    }
+}

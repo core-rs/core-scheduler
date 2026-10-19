@@ -13,7 +13,7 @@ use std::{io, net::Shutdown};
 
 impl NativeScheduler {
     // All payload access happens synchronously inside the readiness callback. Pending futures retain their owners; the reactor retains no payload pointers.
-    async fn socket_operation<Input: Send + 'static, Output: Send + 'static>(
+    async fn socket_operation<Input: Send, Output: Send>(
         &self,
         socket: &NativeSocket,
         mut input: Input,
@@ -207,6 +207,87 @@ impl SocketWrite for NativeScheduler {
             |socket, buffer| socket_io::send(socket, buffer.as_ref()),
         )
         .await
+    }
+}
+
+impl SocketRecvPoll for NativeScheduler {
+    async fn socket_recv_poll(
+        &self,
+        socket: &NativeSocket,
+        buffer: &mut [u8],
+        flags: SocketRecvFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<usize> {
+        self.socket_operation(
+            socket,
+            buffer,
+            cancellation,
+            Interest::Readable,
+            |socket, buffer| socket_io::recv_poll(socket, buffer, flags),
+        )
+        .await
+        .0
+    }
+}
+
+impl SocketSendPoll for NativeScheduler {
+    async fn socket_send_poll(
+        &self,
+        socket: &NativeSocket,
+        buffer: &[u8],
+        flags: SocketSendFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<usize> {
+        self.socket_operation(
+            socket,
+            buffer,
+            cancellation,
+            Interest::Writable,
+            |socket, buffer| socket_io::send_poll(socket, buffer, flags),
+        )
+        .await
+        .0
+    }
+}
+
+impl SocketRecvMsgPoll for NativeScheduler {
+    async fn socket_recvmsg_poll(
+        &self,
+        socket: &NativeSocket,
+        buffer: &mut [std::io::IoSliceMut<'_>],
+        flags: SocketRecvFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<SocketRecvResult> {
+        self.socket_operation(
+            socket,
+            buffer,
+            cancellation,
+            Interest::Readable,
+            |socket, buffer| socket_io::recvmsg_poll(socket, buffer, flags),
+        )
+        .await
+        .0
+    }
+}
+
+impl SocketSendMsgPoll for NativeScheduler {
+    async fn socket_sendmsg_poll(
+        &self,
+        socket: &NativeSocket,
+        buffer: &[std::io::IoSlice<'_>],
+        address: Option<SocketAddress>,
+        flags: SocketSendFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<usize> {
+        self.socket_operation(
+            socket,
+            buffer,
+            cancellation,
+            Interest::Writable,
+            |socket, buffer| socket_io::sendmsg_poll(socket, buffer, address, flags),
+        )
+        .await
+        .0
     }
 }
 

@@ -10,7 +10,10 @@ use core_scheduler::{
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 #[cfg(windows)]
 use std::ptr;
-use std::{io, net::SocketAddr};
+use std::{
+    io::{self, IoSlice, IoSliceMut},
+    net::SocketAddr,
+};
 
 #[cfg(unix)]
 use std::os::fd::{AsRawFd, IntoRawFd};
@@ -234,42 +237,8 @@ impl IoVectors {
         flags: SocketSendFlags,
     ) -> io::Result<usize> {
         let (vectors, count) = self.sending(buffers)?;
-        let address = address.map(SockAddr::from);
-        #[cfg(unix)]
-        {
-            // SAFETY: Zero initializes valid msghdr metadata. Payload and vectors remain alive and immobile until the syscall returns; no control or zero-copy flags extend access.
-            let mut header: libc::msghdr = unsafe { std::mem::zeroed() };
-            header.msg_iov = vectors.cast_mut();
-            header.msg_iovlen = count as _;
-            if let Some(address) = &address {
-                header.msg_name = address.as_ptr().cast_mut().cast();
-                header.msg_namelen = address.len();
-            }
-            // SAFETY: Header, address, vector array, and all initialized byte ranges are retained for this synchronous nonblocking send.
-            result_count(unsafe { libc::sendmsg(socket.as_raw_fd(), &header, send_flags(flags)) })
-        }
-        #[cfg(windows)]
-        {
-            let mut bytes = 0;
-            let (address, length) = address.as_ref().map_or((ptr::null(), 0), |address| {
-                (address.as_ptr().cast(), address.len())
-            });
-            // SAFETY: All pointers are valid through this non-overlapped call. Winsock reads vector entries without modifying them; null overlapped/completion arguments prohibit deferred buffer access.
-            result_count(unsafe {
-                WSASendTo(
-                    socket.as_raw_socket() as _,
-                    vectors,
-                    count as u32,
-                    &mut bytes,
-                    send_flags(flags) as u32,
-                    address,
-                    length,
-                    ptr::null_mut(),
-                    None,
-                )
-            } as isize)?;
-            Ok(bytes as usize)
-        }
+        // SAFETY: The sequence retains the vector array and all payload ranges until this synchronous call returns.
+        unsafe { send_vectors(socket, vectors, count, address, send_flags(flags)) }
     }
 
     pub(crate) fn recv<B: IoBufSequenceMut>(
@@ -279,60 +248,193 @@ impl IoVectors {
         flags: SocketRecvFlags,
     ) -> io::Result<SocketRecvResult> {
         let (vectors, count) = self.receiving(buffers)?;
-        // SAFETY: try_init provides address storage and length initialized to capacity. The syscall fills only this storage, writes initialized payload within supplied ranges, and retains no pointers after return.
-        let ((bytes, truncated, control_truncated), address) = unsafe {
-            SockAddr::try_init(|address, length| {
-                #[cfg(unix)]
-                {
-                    let mut header: libc::msghdr = std::mem::zeroed();
-                    header.msg_iov = vectors.cast_mut();
-                    header.msg_iovlen = count as _;
-                    header.msg_name = address.cast();
-                    header.msg_namelen = *length;
-                    let bytes = result_count(libc::recvmsg(
-                        socket.as_raw_fd(),
-                        &mut header,
-                        recv_flags(flags),
-                    ))?;
-                    *length = header.msg_namelen;
-                    Ok((
-                        bytes,
-                        header.msg_flags & libc::MSG_TRUNC != 0,
-                        header.msg_flags & libc::MSG_CTRUNC != 0,
-                    ))
-                }
-                #[cfg(windows)]
-                {
-                    let mut bytes = 0;
-                    let mut flags = recv_flags(flags) as u32;
-                    let result = WSARecvFrom(
-                        socket.as_raw_socket() as _,
-                        vectors,
-                        count as u32,
-                        &mut bytes,
-                        &mut flags,
-                        address.cast(),
-                        length,
-                        ptr::null_mut(),
-                        None,
-                    );
-                    match result_count(result as isize) {
-                        Ok(_) => Ok((bytes as usize, false, false)),
-                        Err(error) if error.raw_os_error() == Some(WSAEMSGSIZE) => {
-                            Ok((bytes as usize, true, false))
-                        }
-                        Err(error) => Err(error),
-                    }
-                }
-            })
-        }?;
-        Ok(SocketRecvResult {
-            bytes,
-            address: address.as_socket(),
-            truncated,
-            control_truncated,
-        })
+        // SAFETY: The sequence retains the vector array and all payload ranges until this synchronous call returns.
+        unsafe { recv_vectors(socket, vectors, count, recv_flags(flags)) }
     }
+}
+
+// SAFETY: The caller must retain the I/O-vector array and every payload range through this synchronous call; receive ranges must be exclusive. No pointers are retained after return.
+unsafe fn send_vectors(
+    socket: &Socket,
+    vectors: *const NativeVector,
+    count: usize,
+    address: Option<SocketAddr>,
+    flags: i32,
+) -> io::Result<usize> {
+    let address = address.map(SockAddr::from);
+    #[cfg(unix)]
+    {
+        // SAFETY: Zero initializes valid msghdr metadata. Payload and vectors remain alive and immobile until the syscall returns; no control or zero-copy flags extend access.
+        let mut header: libc::msghdr = unsafe { std::mem::zeroed() };
+        header.msg_iov = vectors.cast_mut();
+        header.msg_iovlen = count as _;
+        if let Some(address) = &address {
+            header.msg_name = address.as_ptr().cast_mut().cast();
+            header.msg_namelen = address.len();
+        }
+        // SAFETY: Header, address, vector array, and all initialized byte ranges are retained for this synchronous nonblocking send.
+        result_count(unsafe { libc::sendmsg(socket.as_raw_fd(), &header, flags) })
+    }
+    #[cfg(windows)]
+    {
+        let mut bytes = 0;
+        let (address, length) = address.as_ref().map_or((ptr::null(), 0), |address| {
+            (address.as_ptr().cast(), address.len())
+        });
+        // SAFETY: All pointers are valid through this non-overlapped call. Winsock reads vector entries without modifying them; null overlapped/completion arguments prohibit deferred buffer access.
+        result_count(unsafe {
+            WSASendTo(
+                socket.as_raw_socket() as _,
+                vectors,
+                count as u32,
+                &mut bytes,
+                flags as u32,
+                address,
+                length,
+                ptr::null_mut(),
+                None,
+            )
+        } as isize)?;
+        Ok(bytes as usize)
+    }
+}
+
+// SAFETY: The caller must retain the I/O-vector array and every payload range through this synchronous call; receive ranges must be exclusive. No pointers are retained after return.
+unsafe fn recv_vectors(
+    socket: &Socket,
+    vectors: *const NativeVector,
+    count: usize,
+    flags: i32,
+) -> io::Result<SocketRecvResult> {
+    // SAFETY: try_init provides address storage and length initialized to capacity. The syscall fills only this storage, writes initialized payload within supplied ranges, and retains no pointers after return.
+    let ((bytes, truncated, control_truncated), address) = unsafe {
+        SockAddr::try_init(|address, length| {
+            #[cfg(unix)]
+            {
+                let mut header: libc::msghdr = std::mem::zeroed();
+                header.msg_iov = vectors.cast_mut();
+                header.msg_iovlen = count as _;
+                header.msg_name = address.cast();
+                header.msg_namelen = *length;
+                let bytes = result_count(libc::recvmsg(socket.as_raw_fd(), &mut header, flags))?;
+                *length = header.msg_namelen;
+                Ok((
+                    bytes,
+                    header.msg_flags & libc::MSG_TRUNC != 0,
+                    header.msg_flags & libc::MSG_CTRUNC != 0,
+                ))
+            }
+            #[cfg(windows)]
+            {
+                let mut bytes = 0;
+                let mut flags = flags as u32;
+                let result = WSARecvFrom(
+                    socket.as_raw_socket() as _,
+                    vectors,
+                    count as u32,
+                    &mut bytes,
+                    &mut flags,
+                    address.cast(),
+                    length,
+                    ptr::null_mut(),
+                    None,
+                );
+                match result_count(result as isize) {
+                    Ok(_) => Ok((bytes as usize, false, false)),
+                    Err(error) if error.raw_os_error() == Some(WSAEMSGSIZE) => {
+                        Ok((bytes as usize, true, false))
+                    }
+                    Err(error) => Err(error),
+                }
+            }
+        })
+    }?;
+    Ok(SocketRecvResult {
+        bytes,
+        address: address.as_socket(),
+        truncated,
+        control_truncated,
+    })
+}
+
+#[cfg(unix)]
+const POLL_FLAGS: i32 = libc::MSG_DONTWAIT;
+#[cfg(windows)]
+const POLL_FLAGS: i32 = 0;
+
+// Windows mode changes persist; aliases must not concurrently reset them. Unix instead supplies MSG_DONTWAIT directly to each syscall.
+#[cfg(windows)]
+fn poll_nonblocking(socket: &Socket) -> io::Result<()> {
+    #[cfg(not(test))]
+    let result = socket.set_nonblocking(true);
+    #[cfg(test)]
+    let result = tests::NONBLOCKING_ERROR.with(|slot| match slot.take() {
+        Some(error) => Err(io::Error::from(error)),
+        None => socket.set_nonblocking(true),
+    });
+    result
+}
+
+pub(crate) fn recv_poll(
+    socket: &Socket,
+    bytes: &mut [u8],
+    flags: SocketRecvFlags,
+) -> io::Result<usize> {
+    #[cfg(windows)]
+    poll_nonblocking(socket)?;
+    let flags = POLL_FLAGS | recv_flags(flags);
+    // SAFETY: This initialized, exclusive byte range remains alive until the synchronous receive returns.
+    let bytes = unsafe { std::slice::from_raw_parts_mut(bytes.as_mut_ptr().cast(), bytes.len()) };
+    socket.recv_with_flags(bytes, flags)
+}
+
+pub(crate) fn send_poll(
+    socket: &Socket,
+    bytes: &[u8],
+    flags: SocketSendFlags,
+) -> io::Result<usize> {
+    #[cfg(windows)]
+    poll_nonblocking(socket)?;
+    socket.send_with_flags(bytes, POLL_FLAGS | send_flags(flags))
+}
+
+pub(crate) fn sendmsg_poll(
+    socket: &Socket,
+    buffers: &[IoSlice<'_>],
+    address: Option<SocketAddr>,
+    flags: SocketSendFlags,
+) -> io::Result<usize> {
+    validate_lengths(buffers.len(), buffers.iter().map(|buffer| buffer.len()))?;
+    let empty = native_vector(&[]);
+    let (vectors, count) = if buffers.is_empty() {
+        (&empty as *const NativeVector, 1)
+    } else {
+        (buffers.as_ptr().cast(), buffers.len())
+    };
+    #[cfg(windows)]
+    poll_nonblocking(socket)?;
+    let flags = POLL_FLAGS | send_flags(flags);
+    // SAFETY: IoSlice has the native iovec/WSABUF layout. The borrowed array and its initialized payload remain live throughout this synchronous call, including the empty-vector fallback.
+    unsafe { send_vectors(socket, vectors, count, address, flags) }
+}
+
+pub(crate) fn recvmsg_poll(
+    socket: &Socket,
+    buffers: &mut [IoSliceMut<'_>],
+    flags: SocketRecvFlags,
+) -> io::Result<SocketRecvResult> {
+    validate_lengths(buffers.len(), buffers.iter().map(|buffer| buffer.len()))?;
+    let empty = native_vector(&[]);
+    let (vectors, count) = if buffers.is_empty() {
+        (&empty as *const NativeVector, 1)
+    } else {
+        (buffers.as_ptr().cast(), buffers.len())
+    };
+    #[cfg(windows)]
+    poll_nonblocking(socket)?;
+    let flags = POLL_FLAGS | recv_flags(flags);
+    // SAFETY: IoSliceMut has the native layout. The array and exclusive payload ranges remain live throughout this synchronous call; vector entries are read only.
+    unsafe { recv_vectors(socket, vectors, count, flags) }
 }
 
 fn native_vector(bytes: &[u8]) -> NativeVector {

@@ -133,6 +133,18 @@ mod ipv4 {
     ) {
         run_datagram(SocketDomain::Ipv4, test);
     }
+    mod borrowed_scalar {
+        use super::*;
+        core_scheduler_conformance::socket_poll_tests!(run: run_stream_case);
+    }
+    mod borrowed_messages {
+        use super::*;
+        core_scheduler_conformance::socket_message_poll_tests!(run: run_stream_case);
+    }
+    mod borrowed_datagrams {
+        use super::*;
+        core_scheduler_conformance::socket_datagram_poll_tests!(run: run_datagram_case);
+    }
     mod scalar {
         use super::*;
         core_scheduler_conformance::socket_tests!(run: run_stream_case);
@@ -158,6 +170,18 @@ mod ipv6 {
         test: impl AsyncFnOnce(&TokioScheduler, &TokioSocket, &TokioSocket) + Send + 'static,
     ) {
         run_datagram(SocketDomain::Ipv6, test);
+    }
+    mod borrowed_scalar {
+        use super::*;
+        core_scheduler_conformance::socket_poll_tests!(run: run_stream_case);
+    }
+    mod borrowed_messages {
+        use super::*;
+        core_scheduler_conformance::socket_message_poll_tests!(run: run_stream_case);
+    }
+    mod borrowed_datagrams {
+        use super::*;
+        core_scheduler_conformance::socket_datagram_poll_tests!(run: run_datagram_case);
     }
     mod scalar {
         use super::*;

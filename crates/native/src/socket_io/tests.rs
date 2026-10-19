@@ -309,3 +309,215 @@ fn message_receive_preserves_shutdown_errors() {
         .unwrap_err();
     assert_eq!(error.raw_os_error(), Some(WSAESHUTDOWN));
 }
+
+#[test]
+fn borrowed_native_io_enforces_nonblocking_without_allocating_vectors() {
+    let sender = open(SocketDomain::Ipv4, SocketType::Datagram, None).unwrap();
+    let receiver = open(SocketDomain::Ipv4, SocketType::Datagram, None).unwrap();
+    receiver
+        .bind(&"127.0.0.1:0".parse::<SocketAddr>().unwrap().into())
+        .unwrap();
+    let destination = super::address(receiver.local_addr().unwrap());
+    sender.connect(&destination.into()).unwrap();
+    // Exercise initially blocking sockets. Per-call flags suffice on Unix; Windows must enable FIONBIO before attempting I/O.
+    sender.set_nonblocking(false).unwrap();
+    receiver.set_nonblocking(false).unwrap();
+    let mut target = [0x5a; 4];
+    assert_eq!(
+        recv_poll(&receiver, &mut target, SocketRecvFlags::default())
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::WouldBlock
+    );
+    receiver.set_nonblocking(false).unwrap();
+    assert_eq!(
+        recvmsg_poll(
+            &receiver,
+            &mut [IoSliceMut::new(&mut target)],
+            SocketRecvFlags::default()
+        )
+        .unwrap_err()
+        .kind(),
+        io::ErrorKind::WouldBlock
+    );
+    let source = *b"abc";
+    let allocations = allocation_counter::measure(|| {
+        assert_eq!(
+            send_poll(&sender, &source, SocketSendFlags { dont_route: true }).unwrap(),
+            3
+        );
+        let count =
+            retry(|| recv_poll(&receiver, &mut target, SocketRecvFlags { peek: true })).unwrap();
+        assert_eq!(count, 3);
+        assert_eq!(target, [b'a', b'b', b'c', 0x5a]);
+        let mut first = [0; 1];
+        let mut second = [0x5a; 3];
+        let result = retry(|| {
+            recvmsg_poll(
+                &receiver,
+                &mut [IoSliceMut::new(&mut first), IoSliceMut::new(&mut second)],
+                SocketRecvFlags::default(),
+            )
+        })
+        .unwrap();
+        assert_eq!(result.bytes, 3);
+        assert_eq!(first, *b"a");
+        assert_eq!(second, [b'b', b'c', 0x5a]);
+        assert_eq!(
+            sendmsg_poll(
+                &sender,
+                &[IoSlice::new(&source[..1]), IoSlice::new(&source[1..])],
+                None,
+                SocketSendFlags::default()
+            )
+            .unwrap(),
+            3
+        );
+        assert_eq!(
+            retry(|| recv_poll(&receiver, &mut target, SocketRecvFlags::default())).unwrap(),
+            3
+        );
+    });
+    assert_eq!(
+        allocations.count_total, 0,
+        "borrowed native calls allocated"
+    );
+    assert_eq!(source, *b"abc");
+}
+
+#[cfg(windows)]
+thread_local! {
+    pub(super) static NONBLOCKING_ERROR: std::cell::Cell<Option<io::ErrorKind>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(windows)]
+#[test]
+fn every_borrowed_attempt_propagates_nonblocking_setup_failure_before_io() {
+    let sender = open(SocketDomain::Ipv4, SocketType::Datagram, None).unwrap();
+    let receiver = open(SocketDomain::Ipv4, SocketType::Datagram, None).unwrap();
+    receiver
+        .bind(&"127.0.0.1:0".parse::<SocketAddr>().unwrap().into())
+        .unwrap();
+    let address = super::address(receiver.local_addr().unwrap());
+    sender.connect(&address.into()).unwrap();
+    let mut target = [0x5a; 1];
+    for operation in 0..4 {
+        NONBLOCKING_ERROR.with(|slot| slot.set(Some(io::ErrorKind::PermissionDenied)));
+        let error = match operation {
+            0 => send_poll(&sender, b"x", SocketSendFlags::default()).unwrap_err(),
+            1 => sendmsg_poll(
+                &sender,
+                &[IoSlice::new(b"x")],
+                None,
+                SocketSendFlags::default(),
+            )
+            .unwrap_err(),
+            2 => recv_poll(&receiver, &mut target, SocketRecvFlags::default()).unwrap_err(),
+            _ => recvmsg_poll(
+                &receiver,
+                &mut [IoSliceMut::new(&mut target)],
+                SocketRecvFlags::default(),
+            )
+            .unwrap_err(),
+        };
+        assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(target, [0x5a]);
+    }
+    assert_eq!(
+        recv_poll(&receiver, &mut target, SocketRecvFlags::default())
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::WouldBlock
+    );
+}
+
+// A zero-initialized virtual mapping exercises real slice lengths beyond the portable native limit without touching or allocating physical pages for the payload.
+struct LargeBuffer {
+    pointer: *mut u8,
+    length: usize,
+}
+impl LargeBuffer {
+    fn new() -> Self {
+        let length = i32::MAX as usize + 1;
+        #[cfg(unix)]
+        // SAFETY: Requests a fresh, private, readable/writable anonymous mapping, initialized to zero by the OS. No pages are touched by this test.
+        let pointer = unsafe {
+            libc::mmap(
+                std::ptr::null_mut(),
+                length,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_PRIVATE | libc::MAP_ANON,
+                -1,
+                0,
+            )
+        };
+        #[cfg(unix)]
+        assert_ne!(pointer, libc::MAP_FAILED);
+        #[cfg(windows)]
+        // SAFETY: A fresh committed reservation supplies readable/writable zero-initialized pages on demand. Physical pages are not allocated until accessed.
+        let pointer = unsafe {
+            windows_sys::Win32::System::Memory::VirtualAlloc(
+                std::ptr::null(),
+                length,
+                windows_sys::Win32::System::Memory::MEM_RESERVE
+                    | windows_sys::Win32::System::Memory::MEM_COMMIT,
+                windows_sys::Win32::System::Memory::PAGE_READWRITE,
+            )
+        };
+        assert!(!pointer.is_null());
+        Self {
+            pointer: pointer.cast(),
+            length,
+        }
+    }
+    fn bytes(&mut self) -> &mut [u8] {
+        // SAFETY: This exclusive owner retains the entire zero-initialized, readable/writable mapping. Its length fits isize on our supported 64-bit targets.
+        unsafe { std::slice::from_raw_parts_mut(self.pointer, self.length) }
+    }
+}
+impl Drop for LargeBuffer {
+    fn drop(&mut self) {
+        #[cfg(unix)]
+        // SAFETY: This is exactly the still-owned live mapping and its original length; no borrowed slices remain.
+        assert_eq!(unsafe { libc::munmap(self.pointer.cast(), self.length) }, 0);
+        #[cfg(windows)]
+        // SAFETY: Release the original reservation, with no borrowed slices remaining.
+        assert_ne!(
+            unsafe {
+                windows_sys::Win32::System::Memory::VirtualFree(
+                    self.pointer.cast(),
+                    0,
+                    windows_sys::Win32::System::Memory::MEM_RELEASE,
+                )
+            },
+            0
+        );
+    }
+}
+
+#[test]
+fn borrowed_message_lengths_are_validated_before_native_access() {
+    let socket = open(SocketDomain::Ipv4, SocketType::Datagram, None).unwrap();
+    let mut mapping = LargeBuffer::new();
+    assert_eq!(
+        sendmsg_poll(
+            &socket,
+            &[IoSlice::new(mapping.bytes())],
+            None,
+            SocketSendFlags::default()
+        )
+        .unwrap_err()
+        .kind(),
+        io::ErrorKind::InvalidInput
+    );
+    assert_eq!(
+        recvmsg_poll(
+            &socket,
+            &mut [IoSliceMut::new(mapping.bytes())],
+            SocketRecvFlags::default()
+        )
+        .unwrap_err()
+        .kind(),
+        io::ErrorKind::InvalidInput
+    );
+}

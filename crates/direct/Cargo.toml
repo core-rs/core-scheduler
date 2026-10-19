@@ -27,3 +27,6 @@ core-scheduler-conformance = { path = "../conformance", version = "=0.0.0" }
 futures-lite = "2.6.1"
 tempfile = "3"
 allocation-counter = "0.8.1"
+
+[target.'cfg(windows)'.dev-dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_Memory"] }

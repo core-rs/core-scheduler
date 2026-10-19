@@ -46,6 +46,17 @@ impl SocketRetry {
         }
     }
 
+    pub(crate) fn check_open(&self) -> io::Result<()> {
+        if *self.shared.closed.lock().unwrap() {
+            Err(io::Error::new(
+                io::ErrorKind::BrokenPipe,
+                "scheduler is closed",
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
     pub(crate) async fn wait(&self, cancellation: &Cancellation) -> OperationResult<()> {
         event_listener::listener!(self.shared.retry => retry);
         {

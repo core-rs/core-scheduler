@@ -12,6 +12,28 @@ use socket2::Socket;
 use std::{io, net::Shutdown};
 
 impl DirectScheduler {
+    // Borrowed payload stays in the polling future. Only the retry pulse outlives a synchronous attempt; nothing is dispatched to the worker pool.
+    async fn socket_poll_operation<Output>(
+        &self,
+        socket: &DirectSocket,
+        cancellation: &Cancellation,
+        mut operation: impl FnMut(&Socket) -> io::Result<Output> + Send,
+    ) -> OperationResult<Output> {
+        cancellation.check()?;
+        loop {
+            self.socket_retry.check_open()?;
+            match operation(&socket.0) {
+                Err(error)
+                    if error.kind() == io::ErrorKind::WouldBlock
+                        || error.kind() == io::ErrorKind::Interrupted =>
+                {
+                    self.socket_retry.wait(cancellation).await?;
+                }
+                result => return result.map_err(Into::into),
+            }
+        }
+    }
+
     /// Each attempt owns its entire input in the worker. Between attempts, no worker or kernel can access it, so abandonment is immediately safe. Actual syscall results win cancellation.
     async fn socket_operation<Input: Send + 'static, Output: Send + 'static>(
         &self,
@@ -162,6 +184,67 @@ impl SocketWrite for DirectScheduler {
     ) -> BufferResult<B> {
         self.socket_operation(socket, buffer, cancellation, |socket, buffer| {
             socket_io::send(socket, buffer.as_ref())
+        })
+        .await
+    }
+}
+
+impl SocketRecvPoll for DirectScheduler {
+    async fn socket_recv_poll(
+        &self,
+        socket: &DirectSocket,
+        buffer: &mut [u8],
+        flags: SocketRecvFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<usize> {
+        self.socket_poll_operation(socket, cancellation, |socket| {
+            socket_io::recv_poll(socket, buffer, flags)
+        })
+        .await
+    }
+}
+
+impl SocketSendPoll for DirectScheduler {
+    async fn socket_send_poll(
+        &self,
+        socket: &DirectSocket,
+        buffer: &[u8],
+        flags: SocketSendFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<usize> {
+        self.socket_poll_operation(socket, cancellation, |socket| {
+            socket_io::send_poll(socket, buffer, flags)
+        })
+        .await
+    }
+}
+
+impl SocketRecvMsgPoll for DirectScheduler {
+    async fn socket_recvmsg_poll(
+        &self,
+        socket: &DirectSocket,
+        buffer: &mut [std::io::IoSliceMut<'_>],
+        flags: SocketRecvFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<SocketRecvResult> {
+        self.socket_poll_operation(socket, cancellation, |socket| {
+            socket_io::recvmsg_poll(socket, buffer, flags)
+        })
+        .await
+    }
+}
+
+impl SocketSendMsgPoll for DirectScheduler {
+    async fn socket_sendmsg_poll(
+        &self,
+        socket: &DirectSocket,
+        buffer: &[std::io::IoSlice<'_>],
+        address: Option<SocketAddress>,
+        flags: SocketSendFlags,
+        cancellation: &Cancellation,
+    ) -> OperationResult<usize> {
+        self.socket_poll_operation(socket, cancellation, |socket| {
+            socket_io::sendmsg_poll(socket, buffer, address, flags)
         })
         .await
     }

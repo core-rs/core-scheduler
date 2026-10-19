@@ -53,6 +53,7 @@ Require individual operations, such as `FileRead`, `SocketRead + SocketWrite`, o
 | `Spawn` | Primitive task dispatch with implementation-associated, owning completion handles. |
 | `Blocking` | Optional bounded admission of owned synchronous work. |
 | `Signals` | Optional notification subscriptions with implementation-associated guards and signal identifiers. |
+| Borrowed socket I/O | Optional `SocketRecvPoll`, `SocketSendPoll`, `SocketRecvMsgPoll`, and `SocketSendMsgPoll`, accepting stack buffers and I/O vectors. |
 | Extension capabilities | Typed socket options, scatter/gather messages, address resolution, standard TCP resource registration, file advice, and allocation. |
 
 Operation futures use static dispatch and are `Send`. File and socket resources are `Send + Sync`; spawned futures and outputs are `Send + 'static`. Local-only execution is outside this initial contract. Independent capabilities can be implemented separately without runtime-selection features.
@@ -62,6 +63,8 @@ Operation futures use static dispatch and are `Send`. File and socket resources 
 `Cancellation` is a runtime-independent cooperative signal. Clones share state, children inherit ancestor cancellation, and dropping a signal does not cancel it. Cancellation requests and completed cleanup are separate events.
 
 Owned I/O buffers keep a stable, initialized allocation. Operations return the original owner with success, error, or cancellation. A backend must retain buffers and resources until access ends, including when a caller drops the future. Reads and writes can be partial; there is no implicit read-exact or write-all behavior.
+
+Borrowed socket `_poll` operations are also ordinary async methods: callers `.await` them with explicit cancellation. Each payload access finishes before a poll returns; pending readiness waits retain no payload pointers. Their buffers and `IoSlice` arrays can therefore live on the stack, and dropping or forgetting a pending future leaves no outstanding buffer access. Windows implementations can enable nonblocking mode and leave it enabled; aliases must not concurrently restore blocking mode. Owned operations remain available for completion-based dispatch.
 
 Operation futures are lazy unless explicitly documented otherwise. Pre-cancellation prevents cancellable operation submission. Successful I/O progress wins a concurrent cancellation request; abandoning an operation cannot roll back its effects. Cleanup operations intentionally take no cancellation token so they can finish during graceful shutdown. `Spawn::spawn` and signal subscription register synchronously.
 

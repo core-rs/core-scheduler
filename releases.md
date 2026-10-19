@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add optional borrowed recv/send and message `_poll` capabilities with stack-buffer support, explicit cancellation, and shared conformance suites in Direct, Tokio, and Native. Windows attempts explicitly enable nonblocking mode.
+
 - Add `core-scheduler-native`, porting Socketry's work-stealing executor and readiness I/O with owned operations, explicit cancellation, bounded blocking services, and asynchronous shutdown.
 - Extract `core-scheduler-timers` with reserved timer storage, constant-time cancellation, batched expiry, and reusable sleep registrations.
 
