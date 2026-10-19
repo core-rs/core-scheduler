@@ -408,6 +408,8 @@ fn borrowed_operations_reject_closed_schedulers_and_preserve_storage_on_errors()
     use std::io::{IoSlice, IoSliceMut};
     let scheduler = scheduler(1);
     let socket = socket();
+    let address: SocketAddress = "127.0.0.1:0".parse().unwrap();
+    socket.get_ref().bind(&address.into()).unwrap();
     let never = Cancellation::never();
     let mut target = [0x5a; 4];
     // An unconnected datagram send must report the immediate native error.
@@ -425,8 +427,6 @@ fn borrowed_operations_reject_closed_schedulers_and_preserve_storage_on_errors()
         )),
         Err(OperationError::Io(_))
     ));
-    let address: SocketAddress = "127.0.0.1:0".parse().unwrap();
-    socket.get_ref().bind(&address.into()).unwrap();
     let mut pending = Box::pin(scheduler.socket_recv_poll(
         &socket,
         &mut target,
