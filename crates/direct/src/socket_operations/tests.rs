@@ -373,7 +373,6 @@ fn borrowed_sends_preserve_short_counts_and_cancel_when_the_send_queue_is_full()
         );
         // Saturate both windows and the sender's queue before polling the borrowed future. The peer deliberately never reads.
         let deadline = std::time::Instant::now() + TIMEOUT;
-        let token = Cancellation::new();
         loop {
             assert!(
                 std::time::Instant::now() < deadline,
@@ -381,6 +380,7 @@ fn borrowed_sends_preserve_short_counts_and_cancel_when_the_send_queue_is_full()
             );
             let result = socket_io::send_poll(client_socket, &payload, SocketSendFlags::default());
             if matches!(result, Err(ref error) if error.kind() == io::ErrorKind::WouldBlock) {
+                let token = Cancellation::new();
                 let vectors = [IoSlice::new(&payload)];
                 let cancelled = if message {
                     cancel_pending_send(
@@ -427,11 +427,14 @@ fn cancel_pending_send(
         false
     } else {
         token.cancel();
-        assert!(matches!(
-            block_on(sending),
-            Err(OperationError::Cancelled(_))
-        ));
-        true
+        match block_on(sending) {
+            Err(OperationError::Cancelled(_)) => true,
+            result => {
+                // TCP can free sender capacity between polls without an application read. Progress wins cancellation; keep filling until cancellation is observed.
+                assert!(result.unwrap() > 0);
+                false
+            }
+        }
     }
 }
 
