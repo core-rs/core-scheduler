@@ -4,7 +4,7 @@
 #[cfg(target_os = "linux")]
 use core_scheduler::{SocketRecvMessage, SocketRecvMsgReceiver};
 
-use crate::Result;
+use crate::{BUFFER_SIZE, Result};
 use core_scheduler::{
     Cancellation, IoBuf, SocketAccept, SocketMonitoring, SocketRead, SocketRecvFlags,
     SocketRecvPoll, SocketRegistration, SocketSendFlags, SocketSendPoll, SocketSetOption,
@@ -17,8 +17,6 @@ use std::{
     sync::Arc,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-const BUFFER_SIZE: usize = 65536;
 
 fn ready(listener: &TcpListener) {
     println!("{}", listener.local_addr().expect("listener address"));
@@ -123,7 +121,7 @@ where
             .await
             .expect("monitor receive");
         if count == 0 {
-            return;
+            break;
         }
         let mut sent = 0;
         while sent < count {
@@ -140,6 +138,14 @@ where
             sent += written;
         }
     }
+    scheduler
+        .socket_monitor_close(&mut reader)
+        .await
+        .expect("retire read monitor");
+    scheduler
+        .socket_monitor_close(&mut writer)
+        .await
+        .expect("retire write monitor");
 }
 
 #[cfg(target_os = "linux")]
@@ -264,6 +270,32 @@ async fn scheduler_server<S>(
 pub(crate) fn run(backend: &str, workers: usize, connections: usize) -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind echo listener");
     match backend {
+        #[cfg(target_os = "linux")]
+        "monoio" | "monoio-legacy" => {
+            ready(&listener);
+            crate::monoio_server::run(listener, workers, connections, backend == "monoio-legacy");
+        }
+        #[cfg(target_os = "linux")]
+        "native-monitor" => {
+            let scheduler = Arc::new(
+                core_scheduler_native::NativeScheduler::with_options(
+                    core_scheduler_native::NativeOptions {
+                        workers,
+                        ..Default::default()
+                    },
+                )
+                .expect("Native readiness runtime setup"),
+            );
+            ready(&listener);
+            scheduler.block_on(scheduler_server(
+                Arc::clone(&scheduler),
+                listener,
+                connections,
+                false,
+                true,
+            ));
+            scheduler.block_on(scheduler.shutdown());
+        }
         "tokio" => {
             let runtime = crate::runtime(workers);
             ready(&listener);
@@ -323,7 +355,9 @@ pub(crate) fn run(backend: &str, workers: usize, connections: usize) -> Result<(
             }
             scheduler.block_on(scheduler.shutdown());
         }
-        _ => return Err("unknown backend (iouring requires Linux)".into()),
+        _ => {
+            return Err("unknown backend (Native and Monoio benchmark modes require Linux)".into());
+        }
     }
     Ok(())
 }

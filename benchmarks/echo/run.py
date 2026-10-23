@@ -76,7 +76,7 @@ def main():
     parser.add_argument("--workers", type=int, nargs="+", default=[1, 4])
     parser.add_argument("--connections", type=int, nargs="+", default=[1, 32])
     parser.add_argument("--bytes", type=int, nargs="+", default=[64, 4096])
-    parser.add_argument("--backends", nargs="+", default=["tokio", "tokio-adapter", "tokio-adapter-poll", "iouring", "iouring-poll"])
+    parser.add_argument("--backends", nargs="+", default=["tokio", "tokio-adapter-monitor"] + (["native-monitor", "iouring-monitor", "iouring", "monoio", "monoio-legacy"] if sys.platform == "linux" else []))
     parser.add_argument("--client-binary", type=Path, help="reuse a fixed client executable instead of the newly built binary")
     parser.add_argument("--client-workers", type=int, default=4)
     parser.add_argument("--warmup", type=float, default=1)
@@ -96,8 +96,10 @@ def main():
         parser.error("provide at least one server CPU per worker")
     if set(args.server_cpus) & set(args.client_cpus):
         parser.error("server and client CPU sets must be disjoint")
-    binary = ROOT / "target" / "release" / ("core-scheduler-echo-benchmark.exe" if sys.platform == "win32" else "core-scheduler-echo-benchmark")
-    subprocess.run(["cargo", "build", "--release", "--locked", "-p", "core-scheduler-echo-benchmark"], cwd=ROOT, check=True)
+    artifacts = command_output("cargo", "build", "--release", "--locked", "-p", "core-scheduler-echo-benchmark", "--message-format=json")
+    binary = next(Path(artifact["executable"]) for line in artifacts.splitlines()
+                  if (artifact := json.loads(line)).get("executable")
+                  and artifact["target"]["name"] == "core-scheduler-echo-benchmark")
     report = {
         "created_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "hostname": platform.node(), "platform": platform.platform(),

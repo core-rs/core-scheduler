@@ -2,12 +2,16 @@
 // Copyright, 2026, by Samuel Williams.
 
 mod client;
+#[cfg(target_os = "linux")]
+mod monoio_server;
 mod server;
 
 use std::{error::Error, time::Duration};
+const BUFFER_SIZE: usize = 65536;
+
 type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 
-const USAGE: &str = "Usage: core-scheduler-echo-benchmark server BACKEND WORKERS CONNECTIONS\n       core-scheduler-echo-benchmark client ADDRESS WORKERS CONNECTIONS BYTES WARMUP_SECONDS MEASURE_SECONDS\nBackends: tokio, tokio-adapter, tokio-adapter-poll, tokio-adapter-monitor, iouring, iouring-poll, iouring-multishot, iouring-monitor (io_uring requires Linux). Server binds 127.0.0.1:0 and prints its address.";
+const USAGE: &str = "Usage: core-scheduler-echo-benchmark server BACKEND WORKERS CONNECTIONS\n       core-scheduler-echo-benchmark client ADDRESS WORKERS CONNECTIONS BYTES WARMUP_SECONDS MEASURE_SECONDS\nBackends: tokio, tokio-adapter, tokio-adapter-poll, tokio-adapter-monitor, native-monitor, iouring, iouring-poll, iouring-multishot, iouring-monitor, monoio, monoio-legacy (Native and Monoio benchmark modes require Linux). Server binds 127.0.0.1:0 and prints its address.";
 
 fn positive(value: &str) -> Result<usize> {
     let value = value.parse::<usize>()?;

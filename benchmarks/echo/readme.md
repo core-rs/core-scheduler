@@ -2,9 +2,11 @@
 
 The portable multishot API has been consolidated into pooled receives. Historical results below retain their original meanings and can be reproduced at their recorded commits. Current `multi`/`multi-retain` buffer modes and `iouring-multishot` echo mode use the concrete io_uring constructor. The old portable polling control and `tokio-adapter-multishot` echo mode are retired; use pooled receivers for current portable comparisons.
 
-Compare pure Tokio, `TokioScheduler`, and `NativeScheduler<IoUringSelector>` using the same persistent-connection TCP echo workload. Both scheduler adapters offer owned-buffer, borrowed `_poll`, reusable stream-monitor, and portable multishot cases. `tokio-adapter-multishot` uses on-demand polling with reusable owned leases; `iouring-multishot` uses kernel rearming through the same generic echo loop. The private workspace package adds no dependencies to the public scheduler interface.
+Compare pure Tokio, the Core Tokio adapter, Native readiness/io_uring, and Monoio using the same persistent-connection TCP echo client. The primary comparison uses Core's reusable stream monitors; owned io_uring I/O is retained as a completion-based control. Monoio uses its owned-buffer API with explicitly selected io_uring and epoll drivers. The private workspace package adds no dependencies to the public scheduler interface.
 
 The [initial Aiko results](results.md) include throughput, latency, variation across repetitions, and raw samples.
+
+The [current comparison with Tokio and Monoio](monoio-comparison.md) measures the recommended persistent monitor paths, owned io_uring, and both Monoio drivers on Aiko, with client-placement checks and complete raw results.
 
 The [performance investigation](profiling.md) compares compiler settings, identifies CPU and syscall costs, and measures isolated optimization prototypes.
 
@@ -50,7 +52,7 @@ python3 benchmarks/echo/run.py --server-cpus 0-3 --client-cpus 4-7 --output /tmp
 
 Check `lscpu -e=CPU,CORE,SOCKET,NODE,CACHE` first: those CPU numbers must refer to separate physical cores, preferably sharing one last-level cache. The runner uses the first `workers` entries from the server CPU set. CPU affinity is optional; omit both options on platforms without `taskset`. io_uring requires Linux; use `--backends tokio tokio-adapter tokio-adapter-poll` elsewhere.
 
-The default matrix compares 1 and 4 server workers, 1 and 32 connections, and 64-byte and 4 KiB payloads. Each case runs three times with a one-second warmup and three-second measurement. Case and backend order are shuffled with a fixed seed. Adjust `--workers`, `--connections`, `--bytes`, `--repeats`, `--warmup`, and `--seconds` for longer or different workloads. The client has four Tokio workers by default (`--client-workers`).
+On Linux, the default backends are `tokio`, `tokio-adapter-monitor`, `native-monitor`, `iouring-monitor`, `iouring`, `monoio`, and `monoio-legacy`. Elsewhere the defaults are the two Tokio cases. The default matrix compares 1 and 4 server workers, 1 and 32 connections, and 64-byte and 4 KiB payloads. Each case runs three times with a one-second warmup and three-second measurement. Case and backend order are shuffled with a fixed seed. Adjust `--workers`, `--connections`, `--bytes`, `--repeats`, `--warmup`, and `--seconds` for longer or different workloads. The client has four Tokio workers by default (`--client-workers`).
 
 The runner builds an optimized binary using the checked-in lockfile, then starts separate server and client processes for every sample. Pass `--client-binary /path/to/baseline` to keep an existing client executable fixed across server changes. Raw results record both binary hashes. Servers bind an ephemeral IPv4 loopback port, accept the requested number of connections, and exit after all clients close. Both peers enable `TCP_NODELAY`. Server buffers are 64 KiB and allocated once per connection; writes handle short transfers.
 
@@ -61,9 +63,14 @@ The runner builds an optimized binary using the checked-in lockfile, then starts
 | `tokio-adapter-poll` | Tokio | Borrowed `socket_recv_poll` / `socket_send_poll`, implemented with readiness |
 | `iouring` | Native | Owned reads submit io_uring `Recv`; ready writes complete synchronously, otherwise submit `Send` |
 | `iouring-poll` | Native | Borrowed `socket_recv_poll` / `socket_send_poll`, using direct syscalls and ring readiness waits |
+| `native-monitor` | Native | Borrowed I/O through persistent stream monitors using the portable readiness selector |
+| `monoio` | One local Monoio runtime per worker | Owned `AsyncReadRent` / `AsyncWriteRentExt` with io_uring, no fallback |
+| `monoio-legacy` | One local Monoio runtime per worker | The same owned API with Monoio’s epoll driver |
 | `tokio-adapter-monitor` | Tokio | Borrowed I/O through separate reusable `SocketStreamMonitor` reader/writer state |
 | `iouring-monitor` | Native | Borrowed I/O with persistent directional ring polls and cached stream readiness |
 | `iouring-multishot` | Native | Persistent `socket_recvmsg_multishot` with provided-buffer leases; borrowed sends |
+
+Monoio is the published `0.2.4` release, locked alongside the other dependencies. It uses one local runtime per worker and a 256-entry ring for each io_uring runtime. Setup accepts the predetermined connection count and distributes sockets round-robin before registering them on their owning runtime. Connections never move between Monoio workers; Core and Tokio may schedule work across workers. Workers without connections finish immediately. These are runtime-model differences, not only interface-dispatch costs. The process affinity mask is shared by each server's worker threads; this benchmark does not pin individual Monoio threads. Setup, connection registration, and accept policy are outside the measured workload after warmup. Socket mode matches Monoio's own accept path: nonblocking for epoll and blocking for io_uring. Both use one initialized 64 KiB allocation per connection and complete partial writes before reusing it.
 
 The adapters share one generic owned echo loop and one generic borrowed echo loop. The borrowed loop uses default send/receive flags and keeps the buffer in its connection future. Ready calls can finish in the same task poll; calls returning `WouldBlock` wait for readiness. The io_uring configurations retain one ring per worker, 256 SQ entries per ring, and admission capacity of at least twice the connection count, with a minimum of 256. `iouring-poll` does not submit payload transfers to those rings; it submits `PollAdd` readiness waits only when a syscall would block. Listener handling uses the readiness fallback. Comparing owned and borrowed modes therefore measures a change of I/O mechanism for the native backend, while both Tokio adapter modes already use readiness. The historical borrowed-socket report records the earlier shared-readiness fallback implementation.
 

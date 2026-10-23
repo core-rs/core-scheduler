@@ -9,6 +9,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(target_os = "linux")]
+use std::net::TcpStream;
+
 const BINARY: &str = env!("CARGO_BIN_EXE_core-scheduler-echo-benchmark");
 struct Process(Child);
 impl Process {
@@ -21,6 +24,19 @@ impl Process {
                 .spawn()
                 .unwrap(),
         )
+    }
+    fn address(&mut self) -> String {
+        let stdout = self.0.stdout.take().unwrap();
+        let (send, recv) = mpsc::channel();
+        std::thread::spawn(move || {
+            let mut line = String::new();
+            BufReader::new(stdout).read_line(&mut line).unwrap();
+            send.send(line).unwrap();
+        });
+        recv.recv_timeout(Duration::from_secs(10))
+            .unwrap()
+            .trim()
+            .to_owned()
     }
     fn finish(&mut self, success: bool) -> String {
         let until = Instant::now() + Duration::from_secs(15);
@@ -54,14 +70,7 @@ impl Drop for Process {
 }
 fn smoke(backend: &str) {
     let mut server = Process::new(&["server", backend, "2", "4"]);
-    let stdout = server.0.stdout.take().unwrap();
-    let (send, recv) = mpsc::channel();
-    std::thread::spawn(move || {
-        let mut line = String::new();
-        BufReader::new(stdout).read_line(&mut line).unwrap();
-        send.send(line).unwrap();
-    });
-    let address = recv.recv_timeout(Duration::from_secs(10)).unwrap();
+    let address = server.address();
     let mut client = Process::new(&["client", address.trim(), "2", "4", "4096", "0.03", "0.05"]);
     let output = client.finish(true);
     let stats: serde_json::Value = serde_json::from_str(&output).unwrap();
@@ -170,4 +179,55 @@ fn tokio_adapter_monitor() {
 #[test]
 fn native_iouring_monitor() {
     smoke("iouring-monitor");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn native_readiness_monitor() {
+    smoke("native-monitor");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn monoio_iouring() {
+    smoke("monoio");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn monoio_epoll() {
+    smoke("monoio-legacy");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn monoio_serves_an_active_connection_while_another_is_idle() {
+    for backend in ["monoio", "monoio-legacy"] {
+        let mut server = Process::new(&["server", backend, "1", "2"]);
+        let address = server.address();
+        let idle = TcpStream::connect(&address).unwrap();
+        let mut active = TcpStream::connect(&address).unwrap();
+        active
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        active.write_all(b"active").unwrap();
+        let mut bytes = [0; 6];
+        active.read_exact(&mut bytes).unwrap();
+        assert_eq!(&bytes, b"active");
+        drop((active, idle));
+        server.finish(true);
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn monoio_exits_when_there_are_fewer_connections_than_workers() {
+    for backend in ["monoio", "monoio-legacy"] {
+        let mut server = Process::new(&["server", backend, "4", "1"]);
+        let address = server.address();
+        let mut client = Process::new(&["client", &address, "1", "1", "65536", "0.01", "0.02"]);
+        let output: serde_json::Value = serde_json::from_str(&client.finish(true)).unwrap();
+        assert!(output["requests"].as_u64().unwrap() > 0);
+        server.finish(true);
+    }
 }
