@@ -55,6 +55,7 @@ where
 }
 
 impl IoUringSelector {
+    #[cfg(test)]
     pub(crate) async fn socket_read<B: IoBufMut>(
         &self,
         socket: &impl SocketSource,

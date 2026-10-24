@@ -123,7 +123,7 @@ impl<B: IoBuf> Request<B> {
         entry.user_data(self.identifier)
     }
 
-    fn finish(mut self, result: io::Result<usize>) {
+    fn finish(mut self: Box<Self>, result: io::Result<usize>) {
         let reply = self
             .reply
             .take()
@@ -204,7 +204,7 @@ impl<B: IoBuf> PendingRequest for Request<B> {
         Request::entry(self)
     }
     fn finish(self: Box<Self>, result: io::Result<usize>) {
-        Request::finish(*self, result);
+        Request::finish(self, result);
     }
     fn begin_cancellation(&self) -> bool {
         !self.cancelling.replace(true)
@@ -387,7 +387,7 @@ impl Capacity {
         self.state.fetch_or(CAPACITY_CLOSED, Ordering::AcqRel);
         self.available.notify(usize::MAX);
     }
-    async fn acquire(self: &Arc<Self>, cancellation: &Cancellation) -> io::Result<Permit> {
+    fn try_acquire(self: &Arc<Self>, cancellation: &Cancellation) -> io::Result<Option<Permit>> {
         loop {
             cancellation
                 .check()
@@ -410,10 +410,19 @@ impl Capacity {
                         )
                         .is_ok()
                     {
-                        return Ok(Permit(Arc::clone(self)));
+                        return Ok(Some(Permit(Arc::clone(self))));
                     }
                     continue;
                 }
+            }
+            return Ok(None);
+        }
+    }
+
+    async fn acquire(self: &Arc<Self>, cancellation: &Cancellation) -> io::Result<Permit> {
+        loop {
+            if let Some(permit) = self.try_acquire(cancellation)? {
+                return Ok(permit);
             }
             self.wait_for_capacity(cancellation).await;
         }
@@ -607,10 +616,14 @@ impl IoUringSelector {
     }
 
     fn route(&self) -> Arc<Controller> {
-        crate::io_uring_worker::route(&self.group).unwrap_or_else(|| {
-            let index = self.external_next.fetch_add(1, Ordering::Relaxed) % self.controllers.len();
-            Arc::clone(&self.controllers[index])
-        })
+        Arc::clone(self.route_ref())
+    }
+
+    fn route_ref(&self) -> &Arc<Controller> {
+        let index = crate::io_uring_worker::route_index(&self.group).unwrap_or_else(|| {
+            self.external_next.fetch_add(1, Ordering::Relaxed) % self.controllers.len()
+        });
+        &self.controllers[index]
     }
 
     async fn operation<B: IoBuf>(
@@ -622,40 +635,29 @@ impl IoUringSelector {
         pointer: fn(&mut B) -> *mut u8,
         cancellation: &Cancellation,
     ) -> RawBufferResult<B> {
-        match self
-            .operation_submit(controller, socket, buffer, write, pointer, cancellation)
-            .await
-        {
-            Ok(completion) => completion.await,
-            Err((error, buffer)) => (Err(error), buffer),
-        }
-    }
-
-    async fn operation_submit<B: IoBuf>(
-        &self,
-        controller: Arc<Controller>,
-        socket: RegisteredSocket,
-        buffer: B,
-        write: bool,
-        pointer: fn(&mut B) -> *mut u8,
-        cancellation: &Cancellation,
-    ) -> Result<impl Future<Output = RawBufferResult<B>> + Send, (io::Error, B)> {
         if cancellation.is_cancelled() {
-            return Err((
-                io::Error::new(io::ErrorKind::Interrupted, core_scheduler::Cancelled),
+            return (
+                Err(io::Error::new(
+                    io::ErrorKind::Interrupted,
+                    core_scheduler::Cancelled,
+                )),
                 buffer,
-            ));
+            );
         }
         if let Err(error) = self.check_open() {
-            return Err((error, buffer));
+            return (Err(error), buffer);
         }
-        let permit = match controller.capacity.acquire(cancellation).await {
-            Ok(permit) => permit,
-            Err(error) => return Err((error, buffer)),
+        let permit = match controller.capacity.try_acquire(cancellation) {
+            Ok(Some(permit)) => permit,
+            Ok(None) => match controller.capacity.acquire(cancellation).await {
+                Ok(permit) => permit,
+                Err(error) => return (Err(error), buffer),
+            },
+            Err(error) => return (Err(error), buffer),
         };
         let identifier = match controller.next_identifier() {
             Ok(identifier) => identifier,
-            Err(error) => return Err((error, buffer)),
+            Err(error) => return (Err(error), buffer),
         };
         let (reply, result) = oneshot::channel();
         let request = Request {
@@ -668,12 +670,7 @@ impl IoUringSelector {
             reply: Cell::new(Some(reply)),
             cancelling: Cell::new(false),
         };
-        Ok(Self::submit(
-            controller,
-            Box::new(request),
-            result,
-            cancellation,
-        ))
+        Self::submit(controller, Box::new(request), result, cancellation).await
     }
 
     fn submit<T: Send>(
@@ -1281,6 +1278,7 @@ mod readiness;
 mod registered_file;
 mod ring_binding;
 mod socket;
+pub(crate) mod socket_read;
 
 #[cfg(test)]
 mod tests;

@@ -83,14 +83,14 @@ impl Drop for IoUringWorker {
     }
 }
 
-pub(crate) fn route(group: &Arc<DriverGroup>) -> Option<Arc<Controller>> {
+pub(crate) fn route_index(group: &Arc<DriverGroup>) -> Option<usize> {
     ROUTES.with(|routes| {
         routes
             .borrow()
             .iter()
             .rev()
             .find(|route| Arc::ptr_eq(&route.group, group))
-            .map(|route| Arc::clone(&route.controller))
+            .map(|route| route.controller.worker)
     })
 }
 pub(crate) fn enqueue(controller: &Controller, command: Command) -> Result<(), Command> {

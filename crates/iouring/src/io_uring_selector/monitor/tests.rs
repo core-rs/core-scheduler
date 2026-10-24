@@ -133,10 +133,7 @@ fn short_stream_reads_clear_readiness_only_on_would_block_and_preserve_eof() {
     );
     assert_eq!(&bytes[..3], b"one");
 
-    assert_eq!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(!inspect.registration().is_ready());
 
     let attempts = Arc::new(AtomicUsize::new(0));
     let counted = Arc::clone(&attempts);
@@ -159,9 +156,7 @@ fn short_stream_reads_clear_readiness_only_on_would_block_and_preserve_eof() {
         assert_eq!(attempts.load(Ordering::Relaxed), 1);
         worker.turn(Some(Duration::ZERO)).unwrap();
         peer.write_all(b"two").unwrap();
-        until(&mut worker, || {
-            inspect.registration().readiness.load(Ordering::Acquire) & READY != 0
-        });
+        until(&mut worker, || inspect.registration().is_ready());
         assert_eq!(
             drive(&mut worker, &mut context, receive.as_mut()).unwrap(),
             3
@@ -169,10 +164,7 @@ fn short_stream_reads_clear_readiness_only_on_would_block_and_preserve_eof() {
     }
     assert_eq!(attempts.load(Ordering::Relaxed), 1);
     assert_eq!(&bytes[..3], b"two");
-    assert_ne!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(inspect.registration().is_ready());
 
     peer.shutdown(std::net::Shutdown::Write).unwrap();
     {
@@ -188,10 +180,7 @@ fn short_stream_reads_clear_readiness_only_on_would_block_and_preserve_eof() {
         );
     }
     // EOF is not a short positive read: retain readiness so subsequent reads finish immediately.
-    assert_ne!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(inspect.registration().is_ready());
     assert_eq!(
         block_on(selector.socket_monitor_recv_poll(
             &mut reader,
@@ -248,10 +237,7 @@ fn full_reads_keep_progress_and_short_reads_preserve_racing_notifications() {
     );
     assert_eq!(short[0], b'c');
 
-    assert_ne!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(inspect.registration().is_ready());
 
     peer.write_all(b"de").unwrap();
     assert_eq!(
@@ -266,10 +252,7 @@ fn full_reads_keep_progress_and_short_reads_preserve_racing_notifications() {
     );
     assert_eq!(&full, b"de");
     // A full receive leaves the cached readiness available for further draining.
-    assert_ne!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(inspect.registration().is_ready());
 }
 
 #[test]
@@ -301,10 +284,7 @@ fn shutdown_readiness_survives_the_last_short_receive() {
         4
     );
     assert_eq!(&bytes[..4], b"last");
-    assert_eq!(
-        inspect.registration().readiness.load(Ordering::Acquire) & READY,
-        READY
-    );
+    assert!(inspect.registration().is_ready());
     assert_eq!(
         block_on(selector.socket_monitor_recv_poll(
             &mut reader,
@@ -391,10 +371,7 @@ fn peeking_and_empty_receives_keep_syscall_semantics() {
         .unwrap(),
         1
     );
-    assert_eq!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(!inspect.registration().is_ready());
 
     peer.write_all(b"y").unwrap();
     // Both operations must try the syscall, even though no readiness was cached.
@@ -419,10 +396,7 @@ fn peeking_and_empty_receives_keep_syscall_semantics() {
         1
     );
     assert_eq!(bytes[0], b'y');
-    assert_eq!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(!inspect.registration().is_ready());
     {
         let mut waiting = pin!(selector.socket_monitor_wait(&mut reader, &never));
         drive(&mut worker, &mut context, waiting.as_mut()).unwrap();
@@ -437,10 +411,7 @@ fn peeking_and_empty_receives_keep_syscall_semantics() {
         .unwrap(),
         1
     );
-    assert_ne!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(inspect.registration().is_ready());
     assert_eq!(
         block_on(selector.socket_monitor_recv_poll(
             &mut reader,
@@ -754,7 +725,9 @@ fn unsupported_multishot_poll_falls_back_and_terminal_success_can_rearm() {
     assert!(monitors.is_empty());
     block_on(selector.socket_monitor_wait(&mut storage, &Cancellation::never())).unwrap();
     // A terminal failure is surfaced instead of being mistaken for a readiness event.
-    storage.registration().readiness.store(0, Ordering::Release);
+    storage
+        .registration()
+        .clear_readiness(storage.registration().readiness.load(Ordering::Acquire));
     let submission = staged(&selector, &storage);
     monitors.insert(submission);
     monitors.complete(token, -libc::EBADF, false, false);
@@ -856,19 +829,20 @@ fn interrupted_syscalls_retry_and_observe_cancellation_and_closure() {
     let wake = worker.waker();
     let mut context = Context::from_waker(&wake);
     let (socket, _peer) = sockets(&selector);
-    let writer = selector.socket_monitor(&socket, Interest::Writable);
+    let mut writer = selector.socket_monitor(&socket, Interest::Writable);
     let never = Cancellation::never();
     let mut attempts = 0;
-    let mut operation = Box::pin(
-        selector.monitor_io(&writer, Interest::Writable, &never, |_| {
-            attempts += 1;
-            match attempts {
-                1 => Err(io::ErrorKind::Interrupted.into()),
-                2 => Err(io::ErrorKind::WouldBlock.into()),
-                _ => Ok(7),
-            }
-        }),
-    );
+    let mut operation =
+        Box::pin(
+            selector.monitor_io(&mut writer, Interest::Writable, &never, |_| {
+                attempts += 1;
+                match attempts {
+                    1 => Err(io::ErrorKind::Interrupted.into()),
+                    2 => Err(io::ErrorKind::WouldBlock.into()),
+                    _ => Ok(7),
+                }
+            }),
+        );
     assert_eq!(
         drive(&mut worker, &mut context, operation.as_mut()).unwrap(),
         7
@@ -877,7 +851,7 @@ fn interrupted_syscalls_retry_and_observe_cancellation_and_closure() {
     let cancellation = Cancellation::new();
     assert!(matches!(
         block_on(
-            selector.monitor_io::<()>(&writer, Interest::Writable, &cancellation, |_| {
+            selector.monitor_io::<()>(&mut writer, Interest::Writable, &cancellation, |_| {
                 cancellation.cancel();
                 Err(io::ErrorKind::Interrupted.into())
             })
@@ -887,10 +861,10 @@ fn interrupted_syscalls_retry_and_observe_cancellation_and_closure() {
     for kind in [io::ErrorKind::Interrupted, io::ErrorKind::WouldBlock] {
         let (selector, _driver) = IoUringSelector::new(options()).unwrap();
         let (socket, _peer) = sockets(&selector);
-        let writer = selector.socket_monitor(&socket, Interest::Writable);
+        let mut writer = selector.socket_monitor(&socket, Interest::Writable);
         assert_eq!(
             block_on(
-                selector.monitor_io::<()>(&writer, Interest::Writable, &never, |_| {
+                selector.monitor_io::<()>(&mut writer, Interest::Writable, &never, |_| {
                     selector.close();
                     Err(kind.into())
                 })
@@ -940,8 +914,11 @@ fn cached_readiness_survives_success_and_newer_notifications_survive_would_block
     let before = inspect.registration().readiness.load(Ordering::Acquire);
     let mut attempts = 0;
     assert_eq!(
-        block_on(
-            selector.monitor_io(&writer, Interest::Writable, &Cancellation::never(), |_| {
+        block_on(selector.monitor_io(
+            &mut writer,
+            Interest::Writable,
+            &Cancellation::never(),
+            |_| {
                 attempts += 1;
                 if attempts == 1 {
                     // A notification racing the syscall's EAGAIN must not be cleared using the older readiness tick.
@@ -950,8 +927,8 @@ fn cached_readiness_survives_success_and_newer_notifications_survive_would_block
                 } else {
                     Ok(5)
                 }
-            })
-        )
+            }
+        ))
         .unwrap(),
         5
     );
@@ -960,12 +937,26 @@ fn cached_readiness_survives_success_and_newer_notifications_survive_would_block
         inspect.registration().readiness.load(Ordering::Acquire),
         before
     );
-    assert_ne!(
-        inspect.registration().readiness.load(Ordering::Acquire) & 1,
-        0
-    );
+    assert!(inspect.registration().is_ready());
     block_on(selector.socket_monitor_wait(&mut writer, &Cancellation::never())).unwrap();
     drop(driver);
+}
+
+#[test]
+fn readiness_generations_preserve_a_notification_across_wraparound() {
+    let (selector, _driver) = IoUringSelector::new(options()).unwrap();
+    let (socket, _peer) = sockets(&selector);
+    let monitor = selector.socket_monitor(&socket, Interest::Readable);
+    let registration = monitor.registration();
+    registration.readiness.store(u64::MAX, Ordering::Release);
+    registration.cleared.store(u64::MAX, Ordering::Release);
+    assert!(!registration.is_ready());
+    registration.notify();
+    assert!(registration.is_ready());
+    registration.clear_readiness(u64::MAX);
+    assert!(registration.is_ready());
+    registration.clear_readiness(registration.readiness.load(Ordering::Acquire));
+    assert!(!registration.is_ready());
 }
 
 #[test]
@@ -1195,7 +1186,7 @@ fn dropping_close_leaves_retirement_running_and_can_be_awaited_again() {
 }
 
 #[test]
-fn forgetting_a_wait_cannot_prevent_last_handle_retirement() {
+fn a_forgotten_wait_does_not_prevent_reuse_or_retirement() {
     let (selector, driver) = IoUringSelector::new(options()).unwrap();
     let mut worker = driver.enter();
     let wake = worker.waker();
@@ -1206,25 +1197,28 @@ fn forgetting_a_wait_cannot_prevent_last_handle_retirement() {
     let mut waiting = Box::pin(selector.socket_monitor_wait(&mut reader, &never));
     assert!(waiting.as_mut().poll(&mut context).is_pending());
     worker.turn(Some(Duration::ZERO)).unwrap();
-    // Forgetting leaks the future and its waiter claim. Explicit close still retires independently of that future's destructor.
+    // Forgetting leaks only the future. A new exclusive borrow can replace its cached waker and reuse the same registration.
     std::mem::forget(waiting);
-    assert_eq!(
-        block_on(selector.socket_monitor_wait(&mut reader, &never))
-            .unwrap_err()
-            .kind(),
-        io::ErrorKind::WouldBlock
-    );
-    assert_eq!(
-        block_on(selector.socket_monitor_recv_poll(
+    {
+        let mut waiting = Box::pin(selector.socket_monitor_wait(&mut reader, &never));
+        assert!(waiting.as_mut().poll(&mut context).is_pending());
+    }
+    let mut byte = [0];
+    let mut peer = _peer;
+    peer.write_all(b"x").unwrap();
+    {
+        let mut reading = pin!(selector.socket_monitor_recv_poll(
             &mut reader,
-            &mut [0],
+            &mut byte,
             SocketRecvFlags::default(),
             &never,
-        ))
-        .unwrap_err()
-        .kind(),
-        io::ErrorKind::WouldBlock
-    );
+        ));
+        assert_eq!(
+            drive(&mut worker, &mut context, reading.as_mut()).unwrap(),
+            1
+        );
+    }
+    assert_eq!(byte, *b"x");
     let inspect = reader.retained();
     {
         let mut close = pin!(selector.socket_monitor_close(&mut reader));
@@ -1233,7 +1227,132 @@ fn forgetting_a_wait_cannot_prevent_last_handle_retirement() {
     assert!(!inspect.registration().status.lock().unwrap().pending);
     drop(reader);
     assert!(inspect.registration().closed.load(Ordering::Acquire));
-    assert!(inspect.registration().claimed.load(Ordering::Acquire));
+}
+
+#[test]
+fn dropping_a_task_retires_its_cached_waker_without_socket_activity() {
+    use core_scheduler::Spawn;
+    use core_scheduler_native::{NativeExecutorOptions, NativeScheduler};
+
+    let (selector, driver) = IoUringSelector::new(options()).unwrap();
+    let (socket, _peer) = sockets(&selector);
+    let scheduler = Arc::new(
+        NativeScheduler::with_drivers(
+            selector,
+            vec![driver],
+            NativeExecutorOptions {
+                workers: 1,
+                ..Default::default()
+            },
+        )
+        .unwrap(),
+    );
+    let (ready, pending) = std::sync::mpsc::channel();
+    let shared = Arc::clone(&scheduler);
+    let task = scheduler
+        .spawn(async move {
+            let mut reader = shared
+                .selector()
+                .socket_monitor(&socket, Interest::Readable);
+            let inspect = reader.downgrade();
+            let never = Cancellation::never();
+            let mut byte = [0];
+            let mut reading = pin!(shared.selector().socket_monitor_recv_poll(
+                &mut reader,
+                &mut byte,
+                SocketRecvFlags::default(),
+                &never,
+            ));
+            let mut ready = Some((ready, inspect));
+            poll_fn(|context| {
+                let result = reading.as_mut().poll(context);
+                if result.is_pending() {
+                    if let Some((ready, inspect)) = ready.take() {
+                        ready.send(inspect).unwrap();
+                    }
+                }
+                result
+            })
+            .await
+        })
+        .unwrap();
+    let inspect = pending.recv_timeout(Duration::from_secs(10)).unwrap();
+    drop(task);
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    while inspect.strong_count() != 0 {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "cached waker retained the abandoned task's reader"
+        );
+        std::thread::yield_now();
+    }
+    block_on(scheduler.shutdown());
+}
+
+#[test]
+fn abandoning_a_child_wait_does_not_retain_its_parent_task() {
+    struct Task {
+        future: Mutex<Option<Pin<Box<dyn Future<Output = ()> + Send>>>>,
+    }
+    impl std::task::Wake for Task {
+        fn wake(self: Arc<Self>) {}
+    }
+
+    let (selector, driver) = IoUringSelector::new(options()).unwrap();
+    let mut worker = driver.enter();
+    let (socket, _peer) = sockets(&selector);
+    let selector = Arc::new(selector);
+    let shared = Arc::clone(&selector);
+    let (created, monitor) = std::sync::mpsc::channel();
+    let task = Arc::new(Task {
+        future: Mutex::new(Some(Box::pin(async move {
+            let mut reader = shared.socket_monitor(&socket, Interest::Readable);
+            created.send(reader.downgrade()).unwrap();
+            let never = Cancellation::never();
+            let mut byte = [0];
+            {
+                let mut reading = pin!(shared.socket_monitor_recv_poll(
+                    &mut reader,
+                    &mut byte,
+                    SocketRecvFlags::default(),
+                    &never,
+                ));
+                poll_fn(|context| {
+                    assert!(reading.as_mut().poll(context).is_pending());
+                    Poll::Ready(())
+                })
+                .await;
+            }
+            // The reader survives its abandoned child operation. A cached child waker must not make this parent retain itself after its executor releases ownership.
+            std::future::pending::<()>().await;
+        }))),
+    });
+    let inspect = Arc::downgrade(&task);
+    {
+        let wake = Waker::from(Arc::clone(&task));
+        let mut context = Context::from_waker(&wake);
+        assert!(
+            task.future
+                .lock()
+                .unwrap()
+                .as_mut()
+                .unwrap()
+                .as_mut()
+                .poll(&mut context)
+                .is_pending()
+        );
+    }
+    let monitor = monitor.recv().unwrap();
+    worker.turn(Some(Duration::ZERO)).unwrap();
+    drop(task);
+    let released = inspect.strong_count() == 0;
+    // Break a failed implementation's cycle before asserting so the test does not leak its socket, parent task or registration.
+    if let Some(task) = inspect.upgrade() {
+        let future = task.future.lock().unwrap().take();
+        drop(future);
+    }
+    until(&mut worker, || monitor.strong_count() == 0);
+    assert!(released, "abandoned child waker retained its parent task");
 }
 
 #[test]
@@ -1317,10 +1436,7 @@ fn a_general_tcp_monitor_keeps_syscall_first_behavior_after_short_reads() {
         1
     );
 
-    assert_ne!(
-        reader.registration().readiness.load(Ordering::Acquire) & READY,
-        0
-    );
+    assert!(reader.registration().is_ready());
     // New bytes can be read immediately without driving the selector, even after a short read.
     peer.write_all(b"b").unwrap();
     assert_eq!(
@@ -1366,10 +1482,7 @@ fn a_stream_monitor_on_a_datagram_socket_keeps_message_semantics() {
             expected.len()
         );
         assert_eq!(&buffer[..expected.len()], expected);
-        assert_ne!(
-            reader.registration().readiness.load(Ordering::Acquire) & READY,
-            0
-        );
+        assert!(reader.registration().is_ready());
     }
 }
 
@@ -1463,15 +1576,7 @@ fn urgent_tcp_boundary(monitor: impl Fn(&IoUringSelector, &NativeSocket) -> Stor
                 &never,
             ));
             assert!(receive.as_mut().poll(&mut context).is_pending());
-            assert_eq!(
-                inspect
-                    .as_ref()
-                    .registration()
-                    .readiness
-                    .load(Ordering::Acquire)
-                    & READY,
-                0
-            );
+            assert!(!inspect.registration().is_ready());
         }
         let mut close = pin!(selector.socket_monitor_close(&mut reader));
         drive(&mut worker, &mut context, close.as_mut()).unwrap();

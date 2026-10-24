@@ -8,7 +8,6 @@ use std::sync::Mutex;
 use std::task::Waker;
 
 pub(super) const MONITOR_TAG: u64 = 1;
-const READY: u64 = 1;
 const NO_SLOT: usize = usize::MAX;
 pub(crate) type State = SocketMonitor;
 pub(crate) type Storage = MonitorStorage;
@@ -18,8 +17,8 @@ pub(crate) struct IoUringMonitorRegistration {
     group: Arc<DriverGroup>,
     slot: AtomicUsize,
     closed: AtomicBool,
-    claimed: AtomicBool,
     readiness: AtomicU64,
+    cleared: AtomicU64,
     multishot: AtomicBool,
     status: Arc<Mutex<Status>>,
 }
@@ -47,28 +46,21 @@ fn wake(waker: Option<Waker>) {
 }
 
 impl IoUringMonitorRegistration {
-    fn clear_readiness(&self, observed: u64) {
-        // Preserve notifications published after the syscall took its readiness snapshot.
-        discard(self.readiness.compare_exchange(
-            observed,
-            observed & !READY,
-            Ordering::AcqRel,
-            Ordering::Acquire,
-        ));
+    fn is_ready(&self) -> bool {
+        self.readiness.load(Ordering::Acquire) != self.cleared.load(Ordering::Acquire)
     }
 
-    // `try_update` is not available on the supported Rust 1.85 toolchain.
-    #[allow(deprecated)]
+    fn clear_readiness(&self, observed: u64) {
+        // A WouldBlock consumes only the notification observed before its syscall. A later notification remains ready without a read-modify-write on either side.
+        self.cleared.store(observed, Ordering::Release);
+    }
+
     fn notify(&self) {
         let waker = {
             let mut status = self.status.lock().unwrap();
-            // The low bit caches readiness; the remaining bits distinguish notifications racing a syscall. Like readiness ticks in other reactors, this counter wraps.
-            discard(
-                self.readiness
-                    .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
-                        Some(value.wrapping_add(2) | READY)
-                    }),
-            );
+            // The status lock serializes publishers. Readers snapshot this wrapping generation before their syscall and clear that generation only after WouldBlock.
+            let next = self.readiness.load(Ordering::Relaxed).wrapping_add(1);
+            self.readiness.store(next, Ordering::Release);
             status.waker.take()
         };
         wake(waker);
@@ -95,40 +87,27 @@ impl IoUringMonitorRegistration {
     }
 }
 
+// A notification consumes the cached waker and advances its generation. Only abandonment or completion without a notification needs synchronized cleanup.
 struct Wait<'a> {
-    storage: &'a State,
+    registration: &'a IoUringMonitorRegistration,
+    generation: Option<u64>,
 }
 impl<'a> Wait<'a> {
-    fn claim(storage: &'a State) -> io::Result<Self> {
-        if storage
-            .registration()
-            .claimed
-            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
-            .is_err()
-        {
-            return Err(io::Error::new(
-                io::ErrorKind::WouldBlock,
-                "socket monitor already has a waiter",
-            ));
+    fn new(registration: &'a IoUringMonitorRegistration) -> Self {
+        Self {
+            registration,
+            generation: None,
         }
-        Ok(Self { storage })
     }
 }
 impl Drop for Wait<'_> {
     fn drop(&mut self) {
-        let previous = self
-            .storage
-            .registration()
-            .status
-            .lock()
-            .unwrap()
-            .waker
-            .take();
-        discard(previous);
-        self.storage
-            .registration()
-            .claimed
-            .store(false, Ordering::Release);
+        if let Some(generation) = self.generation {
+            if self.registration.readiness.load(Ordering::Acquire) == generation {
+                let previous = self.registration.status.lock().unwrap().waker.take();
+                discard(previous);
+            }
+        }
     }
 }
 
@@ -149,31 +128,32 @@ impl IoUringSelector {
 
     async fn monitor_wait(
         &self,
-        monitor: &Storage,
+        monitor: &mut Storage,
         cancellation: &Cancellation,
     ) -> OperationResult<()> {
         let state = monitor.as_ref();
         cancellation.check()?;
         self.check_monitor(state)?;
-        let _wait = Wait::claim(state)?;
+        let mut wait = Wait::new(state.registration());
         // Choose a route once for this wait. A suspended future can move without moving its active registration. The next wait may retire and rebind it after a worker change.
-        let controller = self.route();
+        let controller = self.route_ref();
         let mut cancelled = pin!(cancellation.cancelled());
         poll_fn(|context| {
             if cancelled.as_mut().poll(context).is_ready() {
                 return Poll::Ready(Err(core_scheduler::Cancelled.into()));
             }
             self.check_monitor(state)?;
-            self.poll_monitor_wait(monitor, &controller, context)
+            self.poll_monitor_wait(monitor, controller, &mut wait, context)
         })
         .await
     }
 
-    // The caller holds the waiter claim and checks cancellation and monitor compatibility before attempting readiness.
+    // The exclusive resource borrow serializes waits. Record the generation under the publication lock so abandonment can release its cached waker without penalizing normal notification-driven completion.
     fn poll_monitor_wait(
         &self,
         monitor: &Storage,
         controller: &Arc<Controller>,
+        wait: &mut Wait<'_>,
         context: &mut std::task::Context<'_>,
     ) -> Poll<OperationResult<()>> {
         let state = monitor.as_ref();
@@ -185,7 +165,7 @@ impl IoUringSelector {
                 if let Some(error) = status.error.take() {
                     return Poll::Ready(Err(error.into()));
                 }
-                if registration.readiness.load(Ordering::Acquire) & READY != 0 {
+                if registration.is_ready() {
                     return Poll::Ready(Ok(()));
                 }
             }
@@ -218,6 +198,7 @@ impl IoUringSelector {
                     generation,
                 ));
             }
+            wait.generation = Some(registration.readiness.load(Ordering::Acquire));
             (status.waker.replace(replacement), submission, retirement)
         };
         discard(previous);
@@ -258,14 +239,15 @@ impl IoUringSelector {
 
     async fn monitor_io<T>(
         &self,
-        monitor: &Storage,
+        monitor: &mut Storage,
         interest: Interest,
         cancellation: &Cancellation,
         mut operation: impl FnMut(&RegisteredSocket) -> io::Result<T> + Send,
     ) -> OperationResult<T> {
         let state = monitor.as_ref();
         let registration = state.registration();
-        let mut wait = None;
+        let mut route = None;
+        let mut wait = Wait::new(registration);
         let mut cancelled = pin!(cancellation.cancelled());
         poll_fn(|context| {
             loop {
@@ -276,15 +258,14 @@ impl IoUringSelector {
                 match operation(state.socket()) {
                     Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
                         registration.clear_readiness(readiness);
-                        // Keep a single waiter and its original route until this operation completes. A wake retries the syscall before touching readiness bookkeeping.
-                        if wait.is_none() {
-                            wait = Some((Wait::claim(state)?, self.route()));
-                        }
+                        // Retain the original route until this operation completes. A wake retries the syscall before touching readiness bookkeeping.
+                        let controller = route.get_or_insert_with(|| self.route_ref());
                         if cancelled.as_mut().poll(context).is_ready() {
                             return Poll::Ready(Err(core_scheduler::Cancelled.into()));
                         }
-                        let (_, controller) = wait.as_ref().unwrap();
-                        std::task::ready!(self.poll_monitor_wait(monitor, controller, context))?;
+                        std::task::ready!(
+                            self.poll_monitor_wait(monitor, controller, &mut wait, context)
+                        )?;
                     }
                     Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
                     result => return Poll::Ready(result.map_err(Into::into)),
@@ -319,8 +300,8 @@ impl IoUringSelector {
                 slot: AtomicUsize::new(NO_SLOT),
                 closed: AtomicBool::new(false),
                 readiness: AtomicU64::new(0),
+                cleared: AtomicU64::new(0),
                 multishot: AtomicBool::new(true),
-                claimed: AtomicBool::new(false),
                 status: Arc::new(Mutex::new(Status::default())),
             },
         ))

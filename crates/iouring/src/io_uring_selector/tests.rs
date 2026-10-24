@@ -909,6 +909,52 @@ fn moving_a_waiter_to_another_thread_keeps_cancellation_on_the_original_ring() {
 }
 
 #[test]
+fn borrowed_routes_preserve_worker_identity_without_cloning_controllers() {
+    use core_scheduler_selector::SelectorDriver;
+    let (selector, mut drivers) =
+        IoUringSelector::with_workers(IoUringOptions::default(), 2).unwrap();
+    let counts: Vec<_> = selector.controllers.iter().map(Arc::strong_count).collect();
+    for index in 0..4 {
+        assert!(std::ptr::eq(
+            selector.route_ref(),
+            &selector.controllers[index % 2]
+        ));
+    }
+    assert_eq!(selector.external_next.load(Ordering::Relaxed), 4);
+    assert_eq!(
+        selector
+            .controllers
+            .iter()
+            .map(Arc::strong_count)
+            .collect::<Vec<_>>(),
+        counts
+    );
+    let second = drivers.pop().unwrap().enter();
+    let selected = selector.route_ref();
+    assert!(std::ptr::eq(selected, &selector.controllers[1]));
+    let (nested, driver) = pair(1);
+    let nested_worker = driver.enter();
+    assert!(std::ptr::eq(selector.route_ref(), selected));
+    assert!(std::ptr::eq(nested.route_ref(), &nested.controllers[0]));
+    // The selected reference belongs to the explicitly borrowed selector, so it remains valid when its future moves to a thread without this TLS route.
+    std::thread::scope(|scope| {
+        scope
+            .spawn(|| {
+                assert!(std::ptr::eq(selected, &selector.controllers[1]));
+                assert!(std::ptr::eq(selector.route_ref(), &selector.controllers[0]));
+            })
+            .join()
+            .unwrap();
+    });
+    assert_eq!(selector.external_next.load(Ordering::Relaxed), 5);
+    drop(nested_worker);
+    block_on(nested.shutdown());
+    drop(second);
+    drop(drivers);
+    block_on(selector.shutdown());
+}
+
+#[test]
 fn nested_selectors_restore_routes_and_never_use_another_selectors_ring() {
     use core_scheduler_selector::{SelectorDriver, SelectorWorker};
     let (outer, driver) = pair(2);

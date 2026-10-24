@@ -1,24 +1,28 @@
 // Released under the MIT License.
 // Copyright, 2026, by Samuel Williams.
 
+use atomic_waker::AtomicWaker;
 use core_scheduler::{IoBuf, IoBufMut, IoBufSequence, IoBufSequenceMut, OperationError};
-use event_listener::Event;
 use std::{
+    future::poll_fn,
     io,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
+    task::Poll,
 };
 
-/// Lazily allocated retirement state shared by the two directions' owned operation paths.
+/// Lazily allocated retirement state shared by a bound resource and its owned operation.
 #[derive(Default)]
 pub(crate) struct OperationState {
     activity: Option<Arc<Activity>>,
 }
+
 struct Activity {
     running: AtomicBool,
-    retired: Event,
+    // Close borrows its lane mutably, so at most one retirement waiter can register.
+    retired: AtomicWaker,
 }
 
 // Field order releases the owner before publishing retirement, including during unwinding.
@@ -27,10 +31,16 @@ pub(crate) struct OperationGuard<T> {
     _retirement: Retirement,
 }
 struct Retirement(Arc<Activity>);
+struct RetirementWait<'a>(&'a AtomicWaker);
+impl Drop for RetirementWait<'_> {
+    fn drop(&mut self) {
+        self.0.take();
+    }
+}
 impl Drop for Retirement {
     fn drop(&mut self) {
         self.0.running.store(false, Ordering::Release);
-        self.0.retired.notify(usize::MAX);
+        self.0.retired.wake();
     }
 }
 impl<T> OperationGuard<T> {
@@ -92,11 +102,9 @@ impl OperationState {
     }
     pub(crate) fn begin<T>(&mut self, value: T) -> Result<OperationGuard<T>, (OperationError, T)> {
         let activity = self.activity.get_or_insert_with(|| {
-            let retired = Event::new();
-            retired.notify(0);
             Arc::new(Activity {
                 running: AtomicBool::new(false),
-                retired,
+                retired: AtomicWaker::new(),
             })
         });
         if activity.running.swap(true, Ordering::AcqRel) {
@@ -109,13 +117,19 @@ impl OperationState {
     }
     pub(crate) async fn close(&mut self) {
         if let Some(activity) = &self.activity {
-            loop {
-                event_listener::listener!(activity.retired => listener);
+            let _wait = RetirementWait(&activity.retired);
+            poll_fn(|context| {
+                activity.retired.register(context.waker());
                 if !activity.running.load(Ordering::Acquire) {
-                    break;
+                    Poll::Ready(())
+                } else {
+                    Poll::Pending
                 }
-                listener.await;
-            }
+            })
+            .await;
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

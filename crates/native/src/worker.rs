@@ -305,9 +305,9 @@ fn run_loop(
         let Some(runnable) = runnable else {
             continue;
         };
-        run_ready_batch(&shared, runnable);
-        // Publish the available completion batch before starting the next task batch.
+        // Publish completions before freezing a runnable batch. If no task is ready, the idle path can submit and wait in one driver turn.
         drive(&mut driver, Some(Duration::ZERO));
+        run_ready_batch(&shared, runnable);
     }
     CURRENT_WORKER.with(|current| current.take());
 }

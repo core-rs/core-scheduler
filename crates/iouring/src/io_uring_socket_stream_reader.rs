@@ -19,6 +19,7 @@ use std::{
 pub(crate) struct IoUringSocketStreamReader<'a> {
     scheduler: &'a IoUringSelector,
     operations: crate::operation_state::OperationState,
+    owned: Option<crate::io_uring_selector::socket_read::State>,
     monitor: MonitorStorage,
     pool: Option<IoUringBufferPool>,
     ahead: crate::receive_ahead::ReceiveAhead,
@@ -38,6 +39,7 @@ impl<'a> IoUringSocketStreamReader<'a> {
         Ok(Self {
             scheduler,
             operations: Default::default(),
+            owned: None,
             monitor: scheduler.socket_monitor(socket, Interest::Readable),
             pool: None,
             ahead: Default::default(),
@@ -305,8 +307,9 @@ impl SocketStreamReader for IoUringSocketStreamReader<'_> {
             Err((error, buffer)) => return (Err(error), buffer),
         };
         let (result, buffer) = self
-            .scheduler
-            .socket_read(self.monitor.socket(), buffer, cancellation)
+            .owned
+            .get_or_insert_with(Default::default)
+            .read(self.scheduler, self.monitor.socket(), buffer, cancellation)
             .await;
         if matches!(result, Ok(0)) {
             self.eof = true;

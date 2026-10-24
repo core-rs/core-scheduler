@@ -131,15 +131,12 @@ impl IoUringBufferPool {
         match &self.0.storage {
             Storage::Shared(heap) => heap,
             Storage::Workers(workers) => {
-                let local = self
+                let index = self
                     .0
                     .selector
                     .upgrade()
-                    .and_then(|group| crate::io_uring_worker::route(&group));
-                let index = local.map_or_else(
-                    || self.0.next.fetch_add(1, Ordering::Relaxed) % workers.len(),
-                    |controller| controller.worker,
-                );
+                    .and_then(|group| crate::io_uring_worker::route_index(&group))
+                    .unwrap_or_else(|| self.0.next.fetch_add(1, Ordering::Relaxed) % workers.len());
                 &workers[index].heap
             }
         }
