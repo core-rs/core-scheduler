@@ -157,6 +157,70 @@ fn unpublished_receive_is_rejected_when_its_driver_disappears() {
     block_on(selector.shutdown());
 }
 
+#[test]
+fn completion_during_waker_registration_is_collected_without_another_poll() {
+    use std::task::{RawWaker, RawWakerVTable, Waker};
+
+    struct CompletionOnClone {
+        controller: Arc<Controller>,
+        completed: AtomicBool,
+    }
+    unsafe fn clone(pointer: *const ()) -> RawWaker {
+        let pointer = pointer.cast::<CompletionOnClone>();
+        // SAFETY: Every raw waker owns one Arc reference, retained while this callback runs. The clone receives its own reference.
+        unsafe { Arc::increment_strong_count(pointer) };
+        // SAFETY: The original reference keeps this allocation alive throughout the callback.
+        let completion = unsafe { &*pointer };
+        if !completion.completed.swap(true, Ordering::SeqCst) {
+            let Some(Command::Submit(request)) =
+                crate::io_uring_worker::pop(&completion.controller)
+            else {
+                panic!("expected accepted receive before registering its waiter");
+            };
+            // The request has not reached the kernel. Complete it while AtomicWaker holds its registration lock to exercise the readiness recheck deterministically.
+            request.finish(Err(io::ErrorKind::BrokenPipe.into()));
+        }
+        RawWaker::new(pointer.cast(), &VTABLE)
+    }
+    unsafe fn drop_reference(pointer: *const ()) {
+        // SAFETY: Wake and drop each consume exactly the reference owned by their raw waker.
+        drop(unsafe { Arc::from_raw(pointer.cast::<CompletionOnClone>()) });
+    }
+    unsafe fn wake_by_ref(_: *const ()) {}
+    static VTABLE: RawWakerVTable =
+        RawWakerVTable::new(clone, drop_reference, wake_by_ref, drop_reference);
+
+    let (selector, driver) = IoUringSelector::new(Default::default()).unwrap();
+    let (socket, _peer) = sockets(&selector);
+    let mut worker = driver.enter();
+    let completion = Arc::new(CompletionOnClone {
+        controller: Arc::clone(&selector.controllers[0]),
+        completed: AtomicBool::new(false),
+    });
+    let pointer = Arc::into_raw(Arc::clone(&completion));
+    // SAFETY: The vtable maintains one Arc reference per raw waker and all shared state is thread-safe.
+    let wake = unsafe { Waker::from_raw(RawWaker::new(pointer.cast(), &VTABLE)) };
+    let mut context = Context::from_waker(&wake);
+    let never = Cancellation::never();
+    let mut reader = selector.socket_stream_reader(&socket).unwrap();
+    {
+        let mut reading = pin!(reader.read_owned(vec![7; 16], &never));
+        let Poll::Ready((result, buffer)) = reading.as_mut().poll(&mut context) else {
+            panic!("completion during registration must be ready immediately");
+        };
+        assert_eq!(result.unwrap_err().kind(), io::ErrorKind::BrokenPipe);
+        assert_eq!(buffer, [7; 16]);
+        assert!(completion.completed.load(Ordering::SeqCst));
+    }
+    let wake = worker.waker();
+    drive(
+        &mut worker,
+        &mut Context::from_waker(&wake),
+        pin!(reader.close()),
+    )
+    .unwrap();
+}
+
 struct ObservedBuffer {
     bytes: Vec<u8>,
     drops: Arc<AtomicUsize>,
