@@ -1,0 +1,108 @@
+22b246853c609264f9112554075bf49eb2cc9af2
+diff --git a/crates/native/src/worker.rs b/crates/native/src/worker.rs
+index 9862749..8415be0 100644
+--- a/crates/native/src/worker.rs
++++ b/crates/native/src/worker.rs
+@@ -56,6 +56,7 @@ struct LocalWorker {
+     scheduler: Weak<Shared>,
+     ready: Worker<Runnable>,
+     current: Worker<Runnable>,
++    polling_tasks: bool,
+     timers: core_scheduler_timers::local::TimerQueue<Waker>,
+ }
+ 
+@@ -94,23 +95,24 @@ pub(crate) fn timers<T>(
+ 
+ pub(crate) fn schedule(shared: &Arc<Shared>, runnable: Runnable) {
+     let preferred = runnable.metadata().worker.load(Ordering::Relaxed);
+-    let remote = CURRENT_WORKER.with(|current| {
++    let notify = CURRENT_WORKER.with(|current| {
+         let current = current.borrow();
+         if let Some(worker) = current.as_ref() {
+             if std::ptr::eq(worker.scheduler.as_ptr(), Arc::as_ptr(shared))
+                 && preferred == worker.identifier
+             {
+                 worker.ready.push(runnable);
+-                return None;
++                // Completion publication returns to this worker's ready queue. Wake helpers at the batch boundary; application polls still allow immediate stealing.
++                return worker.polling_tasks;
+             }
+         }
+-        Some(runnable)
+-    });
+-    if let Some(runnable) = remote {
+         shared.workers[preferred].incoming.push(runnable);
++        true
++    });
++    if notify {
++        // Publication precedes the sleeping flag exchange. A worker publishes its sleeping flag before rechecking queues, so a racing wake is retained.
++        shared.wake_idle(preferred);
+     }
+-    // Publication precedes the sleeping flag exchange. A worker publishes its sleeping flag before rechecking queues, so a racing wake is retained.
+-    shared.wake_idle(preferred);
+ }
+ 
+ fn search(shared: &Shared, local: &LocalWorker, iteration: usize) -> Steal<Runnable> {
+@@ -263,6 +265,7 @@ fn run_loop(
+             scheduler: Arc::downgrade(&shared),
+             ready,
+             current,
++            polling_tasks: false,
+             timers: core_scheduler_timers::local::TimerQueue::with_capacity(shared.timer_capacity),
+         }))
+     });
+@@ -319,6 +322,7 @@ fn run_ready_batch(shared: &Shared, first: Runnable) {
+         let mut current = current.borrow_mut();
+         let local = current.as_mut().expect("worker context is installed");
+         std::mem::swap(&mut local.ready, &mut local.current);
++        local.polling_tasks = true;
+         (local.identifier, !local.current.is_empty())
+     });
+     if has_more {
+@@ -341,6 +345,9 @@ fn run_ready_batch(shared: &Shared, first: Runnable) {
+                 .pop()
+         });
+     }
++    CURRENT_WORKER.with(|current| {
++        current.borrow_mut().as_mut().unwrap().polling_tasks = false;
++    });
+ }
+ 
+ #[cfg(test)]
+diff --git a/crates/native/src/worker/tests.rs b/crates/native/src/worker/tests.rs
+index d0f06df..2ce78f6 100644
+--- a/crates/native/src/worker/tests.rs
++++ b/crates/native/src/worker/tests.rs
+@@ -210,6 +210,7 @@ fn batch_search_admits_incoming_tasks_before_local_work() {
+         scheduler: Arc::downgrade(&shared),
+         ready,
+         current,
++        polling_tasks: false,
+         timers: core_scheduler_timers::local::TimerQueue::with_capacity(8),
+     };
+     shared.workers[0].incoming.push(runnable());
+@@ -246,6 +247,7 @@ fn nested_admission_distributes_tasks_instead_of_inheriting_the_worker() {
+             scheduler: Arc::downgrade(&shared),
+             ready,
+             current,
++            polling_tasks: false,
+             timers: core_scheduler_timers::local::TimerQueue::with_capacity(8),
+         }));
+     });
+@@ -292,6 +294,7 @@ fn idle_worker_steals_remote_wakes_when_preferred_worker_is_busy() {
+         scheduler: Arc::downgrade(&shared),
+         ready,
+         current,
++        polling_tasks: false,
+         timers: core_scheduler_timers::local::TimerQueue::with_capacity(8),
+     };
+     // The victim has no local work, but a remote wake has reached its inbox.
+@@ -315,6 +318,7 @@ fn idle_worker_can_steal_both_ready_generations() {
+         scheduler: Arc::downgrade(&shared),
+         ready,
+         current,
++        polling_tasks: false,
+         timers: core_scheduler_timers::local::TimerQueue::with_capacity(8),
+     };
+     for queue in &queues[0] {
+e5285ddd9065f136e2557e54be7bb57ab84ab02f42b7e66ab90466b085e10f7b  Cargo.lock

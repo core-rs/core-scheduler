@@ -1,0 +1,113 @@
+22b246853c609264f9112554075bf49eb2cc9af2
+diff --git a/crates/iouring/src/io_uring_selector.rs b/crates/iouring/src/io_uring_selector.rs
+index 9037ce7..d3b75ee 100644
+--- a/crates/iouring/src/io_uring_selector.rs
++++ b/crates/iouring/src/io_uring_selector.rs
+@@ -800,7 +800,8 @@ impl Reactor {
+         if !self.started {
+             if let Ok(ring) = syscall("cooperative-ring", || {
+                 IoUring::builder()
+-                    .setup_coop_taskrun()
++                    .setup_single_issuer()
++                    .setup_defer_taskrun()
+                     .setup_taskrun_flag()
+                     .build(self.ring.params().sq_entries())
+             }) {
+diff --git a/crates/iouring/src/io_uring_selector/monitor.rs b/crates/iouring/src/io_uring_selector/monitor.rs
+index dfb8179..f723793 100644
+--- a/crates/iouring/src/io_uring_selector/monitor.rs
++++ b/crates/iouring/src/io_uring_selector/monitor.rs
+@@ -330,6 +330,59 @@ impl IoUringSelector {
+         })
+         .await
+     }
++    // Diagnostic only: emulate Tokio's scalar stream short-read policy. An urgent-data boundary can leave unread ordinary bytes behind this cleared readiness.
++    pub(crate) async fn socket_monitor_recv_short_read_poll(
++        &self,
++        monitor: &mut Storage,
++        established: &mut bool,
++        buffer: &mut [u8],
++        cancellation: &Cancellation,
++    ) -> OperationResult<usize> {
++        let state = monitor.as_ref();
++        let registration = state.registration();
++        let mut route = None;
++        let mut wait = Wait::new(registration);
++        let mut cancelled = pin!(cancellation.cancelled());
++        let mut wait_first = *established;
++        poll_fn(|context| {
++            loop {
++                cancellation.check()?;
++                self.check_monitor(state)?;
++                state.check_interest(Interest::Readable)?;
++                if wait_first && !registration.is_ready() {
++                    let controller = route.get_or_insert_with(|| self.route_ref());
++                    if cancelled.as_mut().poll(context).is_ready() {
++                        return Poll::Ready(Err(core_scheduler::Cancelled.into()));
++                    }
++                    std::task::ready!(
++                        self.poll_monitor_wait(monitor, controller, &mut wait, context)
++                    )?;
++                }
++                let readiness = registration.readiness.load(Ordering::Acquire);
++                match syscall("monitor-recv", || {
++                    crate::retained_socket::recv(state.socket(), buffer, SocketRecvFlags::default())
++                }) {
++                    Ok(count) => {
++                        if count > 0 {
++                            *established = true;
++                            if count < buffer.len() {
++                                registration.clear_readiness(readiness);
++                            }
++                        }
++                        return Poll::Ready(Ok(count));
++                    }
++                    Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
++                        registration.clear_readiness(readiness);
++                        wait_first = true;
++                    }
++                    Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
++                    Err(error) => return Poll::Ready(Err(error.into())),
++                }
++            }
++        })
++        .await
++    }
++
+     pub(crate) async fn socket_monitor_send_poll(
+         &self,
+         monitor: &mut Storage,
+diff --git a/crates/iouring/src/io_uring_socket_stream_reader.rs b/crates/iouring/src/io_uring_socket_stream_reader.rs
+index 8b970c2..b35b8b0 100644
+--- a/crates/iouring/src/io_uring_socket_stream_reader.rs
++++ b/crates/iouring/src/io_uring_socket_stream_reader.rs
+@@ -23,6 +23,7 @@ pub(crate) struct IoUringSocketStreamReader<'a> {
+     monitor: MonitorStorage,
+     pool: Option<IoUringBufferPool>,
+     ahead: crate::receive_ahead::ReceiveAhead,
++    established: bool,
+     eof: bool,
+     closed: bool,
+ }
+@@ -43,6 +44,7 @@ impl<'a> IoUringSocketStreamReader<'a> {
+             monitor: scheduler.socket_monitor(socket, Interest::Readable),
+             pool: None,
+             ahead: Default::default(),
++            established: false,
+             eof: false,
+             closed: false,
+         })
+@@ -154,10 +156,10 @@ impl SocketStreamReader for IoUringSocketStreamReader<'_> {
+         }
+         let count = self
+             .scheduler
+-            .socket_monitor_recv_poll(
++            .socket_monitor_recv_short_read_poll(
+                 &mut self.monitor,
++                &mut self.established,
+                 buffer,
+-                SocketRecvFlags::default(),
+                 cancellation,
+             )
+             .await?;
+6c77c315c1ab76bd8697f201e4660c714ea358045bb4162fd4a2abcee51cb974  /home/samuel/.cache/core-scheduler-native-short-read-deferred/candidate

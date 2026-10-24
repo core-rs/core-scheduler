@@ -1,0 +1,2 @@
+ final-postbatch  907882 [000] 89332.446339: io_uring:io_uring_create: ring 0xffff88a3fd5d7800, fd 5 sq size 256, cq size 512, flags 0x0
+ core-native-tas  907884 [000] 89332.446569: io_uring:io_uring_create: ring 0xffff88a1a147b000, fd 10 sq size 256, cq size 512, flags 0x300

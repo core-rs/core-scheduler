@@ -1,0 +1,55 @@
+22b246853c609264f9112554075bf49eb2cc9af2
+diff --git a/crates/iouring/src/io_uring_selector.rs b/crates/iouring/src/io_uring_selector.rs
+index 9037ce7..d3b75ee 100644
+--- a/crates/iouring/src/io_uring_selector.rs
++++ b/crates/iouring/src/io_uring_selector.rs
+@@ -800,7 +800,8 @@ impl Reactor {
+         if !self.started {
+             if let Ok(ring) = syscall("cooperative-ring", || {
+                 IoUring::builder()
+-                    .setup_coop_taskrun()
++                    .setup_single_issuer()
++                    .setup_defer_taskrun()
+                     .setup_taskrun_flag()
+                     .build(self.ring.params().sq_entries())
+             }) {
+diff --git a/crates/native/src/worker.rs b/crates/native/src/worker.rs
+index 9862749..77e1760 100644
+--- a/crates/native/src/worker.rs
++++ b/crates/native/src/worker.rs
+@@ -123,33 +123,7 @@ fn search(shared: &Shared, local: &LocalWorker, iteration: usize) -> Steal<Runna
+     if let Some(runnable) = local.ready.pop() {
+         return Steal::Success(runnable);
+     }
+-    // Only steal after exhausting this worker's own work. Rotate the first victim so idle workers do not always contend on worker zero.
+-    for offset in 0..shared.workers.len() {
+-        let victim = local
+-            .identifier
+-            .wrapping_add(iteration)
+-            .wrapping_add(offset)
+-            % shared.workers.len();
+-        if victim == local.identifier {
+-            continue;
+-        }
+-        let worker = &shared.workers[victim];
+-        // Both generations remain stealable while their owner swaps their roles.
+-        for stealer in &worker.stealers {
+-            if let Some(runnable) =
+-                take_stolen(stealer.steal_batch_and_pop(&local.ready), &mut retry)
+-            {
+-                return Steal::Success(runnable);
+-            }
+-        }
+-        // Remote wakes remain stealable while the previous worker is busy.
+-        if let Some(runnable) = take_stolen(
+-            worker.incoming.steal_batch_and_pop(&local.ready),
+-            &mut retry,
+-        ) {
+-            return Steal::Success(runnable);
+-        }
+-    }
++    // Diagnostic only: retain each task on its last worker.
+     search_result(retry)
+ }
+ 
+e5285ddd9065f136e2557e54be7bb57ab84ab02f42b7e66ab90466b085e10f7b  Cargo.lock

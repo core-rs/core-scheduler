@@ -1,0 +1,193 @@
+e3b67a578cf8b7e57b0b3e8623a0f40439fe7c33
+diff --git a/benchmarks/echo/tokio-parity.md b/benchmarks/echo/tokio-parity.md
+index 6f98484..fed6d27 100644
+--- a/benchmarks/echo/tokio-parity.md
++++ b/benchmarks/echo/tokio-parity.md
+@@ -62,6 +62,8 @@ The busy single-worker owned path is now 2.1–2.2% behind the conservative Toki
+ 
+ Owned P99 improves from 56.959 to 53.631 µs for one worker/32 connections/64 bytes, and from 62.911 to 59.423 µs for the corresponding 4 KiB case. Other P99 changes vary; the JSON preserves every latency and throughput sample rather than deriving latency from throughput. Three repetitions do not establish a tight confidence interval.
+ 
++The [receive-policy and ring investigation](native-short-read.md) continues this comparison with a Native short-read diagnostic, syscall counts, CPU profiles, and controlled ring task-work experiments.
++
+ ## Rejected alternatives
+ 
+ Explicit `inline(always)` annotations produced a byte-identical Native `.text` section in the [compiler screen](results/tokio-parity/diagnostics/native-compiler-screen.json). Thin LTO changed Native throughput by only +0.65% in that short screen. Additional Tokio adapter prototypes produced no useful measured gain. No profile or Tokio production change is selected.
+diff --git a/crates/iouring/src/io_uring_selector.rs b/crates/iouring/src/io_uring_selector.rs
+index 9037ce7..dcdb08c 100644
+--- a/crates/iouring/src/io_uring_selector.rs
++++ b/crates/iouring/src/io_uring_selector.rs
+@@ -800,7 +800,8 @@ impl Reactor {
+         if !self.started {
+             if let Ok(ring) = syscall("cooperative-ring", || {
+                 IoUring::builder()
+-                    .setup_coop_taskrun()
++                    .setup_single_issuer()
++                    .setup_defer_taskrun()
+                     .setup_taskrun_flag()
+                     .build(self.ring.params().sq_entries())
+             }) {
+@@ -1058,6 +1059,28 @@ impl Reactor {
+         self.started = true;
+         let (mut progressed, command_batch_full) = self.process_commands();
+ 
++        // Flush deferred kernel work before inspecting the completion snapshot. Leave staged SQEs for the normal submission decision, and never enter merely to check an idle ring.
++        if self.ring.submission().taskrun() {
++            let result = syscall("get-events", || {
++                // SAFETY: This thread owns the ring. No entries are submitted and zero required completions cannot block. GETEVENTS processes kernel work without retaining any argument pointer.
++                unsafe {
++                    self.ring.submitter().enter::<libc::sigset_t>(
++                        0,
++                        0,
++                        io_uring::EnterFlags::GETEVENTS.bits(),
++                        None,
++                    )
++                }
++            });
++            match result {
++                Err(error)
++                    if error.kind() == io::ErrorKind::Interrupted
++                        || matches!(error.raw_os_error(), Some(libc::EBUSY | libc::EAGAIN)) => {}
++                result => {
++                    result?;
++                }
++            }
++        }
+         progressed |= self.collect_completions()?;
+ 
+         // Initialize and refill on the ring owner. Each indexed entry owns only this worker's storage; completed payloads may be retained on any thread.
+@@ -1085,11 +1108,8 @@ impl Reactor {
+             );
+         }
+ 
+-        let defer_submission;
+         {
+             let (submitter, mut submissions, _) = self.ring.split();
+-            let had_submissions = !submissions.is_empty();
+-            let mut prepared = false;
+             while let Some(&identifier) = self.cancellations.front() {
+                 let entry = opcode::AsyncCancel::new(identifier)
+                     .build()
+@@ -1120,7 +1140,6 @@ impl Reactor {
+                 let request = self.in_flight.0.entry(identifier).or_insert(request);
+                 let entry = request.entry();
+                 progressed |= request.entry_may_wake();
+-                prepared = true;
+                 // SAFETY: InFlight owns the buffer allocation and descriptor before publication. Neither is released or accessed until the original CQE, even when cancellation completes first. A failed push does not publish the entry.
+                 unsafe { submissions.push(&entry) }
+                     .expect("submission capacity was checked and the local queue has not changed");
+@@ -1139,7 +1158,6 @@ impl Reactor {
+                     continue;
+                 }
+                 let entry = self.monitors.insert(submission);
+-                prepared = true;
+                 // SAFETY: The monitor table retains the stable record and socket before publication. Both original and cancellation CQEs must retire before the record can be reused.
+                 unsafe { submissions.push(&entry) }
+                     .expect("monitor submission capacity was checked");
+@@ -1157,12 +1175,6 @@ impl Reactor {
+                     .expect("submission capacity was checked and the local queue has not changed");
+                 self.notification_armed = true;
+             }
+-            // A readiness-only batch can join the next idle wait. Existing SQ entries must be submitted on this turn, even if tasks stay busy.
+-            defer_submission = prepared
+-                && !progressed
+-                && !command_batch_full
+-                && !had_submissions
+-                && timeout == Some(Duration::ZERO);
+         }
+ 
+         if self.closing
+@@ -1189,9 +1201,7 @@ impl Reactor {
+         if return_to_executor {
+             let needs_submit = {
+                 let submissions = self.ring.submission();
+-                (!submissions.is_empty() && !defer_submission)
+-                    || submissions.cq_overflow()
+-                    || submissions.taskrun()
++                !submissions.is_empty() || submissions.cq_overflow() || submissions.taskrun()
+             };
+             if needs_submit {
+                 let before = self
+diff --git a/crates/iouring/src/io_uring_selector/tests.rs b/crates/iouring/src/io_uring_selector/tests.rs
+index 7bf4998..bccdbc9 100644
+--- a/crates/iouring/src/io_uring_selector/tests.rs
++++ b/crates/iouring/src/io_uring_selector/tests.rs
+@@ -2306,6 +2306,78 @@ fn fresh_bound_worker_attempts_optional_upgrade_without_losing_queued_io() {
+     drive_bound_worker(&mut worker, selector.shutdown());
+ }
+ 
++fn pending_deferred_notification() -> Option<(IoUringSelector, IoUringDriver)> {
++    let (selector, mut driver) = pair(1);
++    driver.reactor.as_mut().unwrap().bind_worker();
++    if !driver
++        .reactor
++        .as_ref()
++        .unwrap()
++        .ring
++        .params()
++        .is_setup_single_issuer()
++    {
++        drain(&selector, &mut driver);
++        return None;
++    }
++    driver.turn(Some(Duration::ZERO)).unwrap();
++    driver.waker().wake_by_ref();
++    let deadline = Instant::now() + Duration::from_secs(10);
++    while !driver.reactor.as_mut().unwrap().ring.submission().taskrun() {
++        assert!(
++            Instant::now() < deadline,
++            "notification task work did not arrive"
++        );
++        std::thread::yield_now();
++    }
++    Some((selector, driver))
++}
++
++#[test]
++fn pending_kernel_work_is_published_before_the_first_completion_snapshot() {
++    let Some((selector, mut driver)) = pending_deferred_notification() else {
++        return;
++    };
++    let _hooks = Failures;
++    let collected = Arc::new(AtomicBool::new(false));
++    BEFORE_SYSCALL.with(|hook| {
++        let collected = Arc::clone(&collected);
++        *hook.borrow_mut() = Some((
++            "notification-read",
++            Box::new(move || collected.store(true, Ordering::SeqCst)),
++        ));
++    });
++    driver.turn(Some(Duration::ZERO)).unwrap();
++    assert!(collected.load(Ordering::SeqCst));
++    drain(&selector, &mut driver);
++}
++
++#[test]
++fn deferred_work_flush_retries_transient_errors_and_stops_after_fatal_errors() {
++    for error in [
++        io::ErrorKind::Interrupted.into(),
++        io::Error::from_raw_os_error(libc::EBUSY),
++        io::Error::from_raw_os_error(libc::EAGAIN),
++        io::ErrorKind::PermissionDenied.into(),
++    ] {
++        let Some((selector, mut driver)) = pending_deferred_notification() else {
++            return;
++        };
++        let fatal = error.kind() == io::ErrorKind::PermissionDenied;
++        let _failure = Failures::new([("get-events", error)]);
++        let result = driver.turn(Some(Duration::ZERO));
++        assert!(FAILURES.with(|failures| failures.borrow().is_empty()));
++        if fatal {
++            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
++            assert!(driver.turn(None).unwrap());
++            block_on(selector.shutdown());
++        } else {
++            assert!(!result.unwrap());
++            drain(&selector, &mut driver);
++        }
++    }
++}
++
+ #[test]
+ fn optional_worker_upgrade_failures_preserve_the_valid_ring_and_queued_io() {
+     use core_scheduler_selector::SelectorDriver;
+e5285ddd9065f136e2557e54be7bb57ab84ab02f42b7e66ab90466b085e10f7b  Cargo.lock

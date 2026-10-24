@@ -1,0 +1,8 @@
+ final-postbatch  915579 [001] 90147.839857: io_uring:io_uring_create: ring 0xffff88a18631a800, fd 5 sq size 256, cq size 512, flags 0x0
+ final-postbatch  915579 [001] 90147.839873: io_uring:io_uring_create: ring 0xffff88a204542000, fd 7 sq size 256, cq size 512, flags 0x0
+ final-postbatch  915579 [001] 90147.839883: io_uring:io_uring_create: ring 0xffff88aae126d800, fd 9 sq size 256, cq size 512, flags 0x0
+ final-postbatch  915579 [001] 90147.839893: io_uring:io_uring_create: ring 0xffff88a2c9508800, fd 11 sq size 256, cq size 512, flags 0x0
+ core-native-tas  915581 [003] 90147.840083: io_uring:io_uring_create: ring 0xffff88a1fbce5000, fd 13 sq size 256, cq size 512, flags 0x300
+ core-native-tas  915582 [002] 90147.840149: io_uring:io_uring_create: ring 0xffff88a1a147e800, fd 5 sq size 256, cq size 512, flags 0x300
+ core-native-tas  915583 [003] 90147.840178: io_uring:io_uring_create: ring 0xffff88a1b0476000, fd 14 sq size 256, cq size 512, flags 0x300
+ core-native-tas  915584 [000] 90147.840225: io_uring:io_uring_create: ring 0xffff88a1b0472800, fd 7 sq size 256, cq size 512, flags 0x300

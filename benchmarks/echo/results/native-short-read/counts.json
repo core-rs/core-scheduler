@@ -1,0 +1,101 @@
+{
+  "event": "syscalls:sys_enter_recvfrom",
+  "warmup": 0,
+  "note": "No warmup: reported requests and syscall counts cover the same interval, plus connection startup and EOF. Instrumented throughput is not capacity evidence.",
+  "sudo_perf": true,
+  "samples": [
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 37.353495279947914,
+      "requests": 1835999,
+      "requests_per_second": 611999.6666666666,
+      "rtt_max_us": 230.271,
+      "rtt_mean_us": 52.22361518225225,
+      "rtt_p50_us": 52.127,
+      "rtt_p95_us": 55.295,
+      "rtt_p99_us": 56.927,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "baseline",
+      "binary_sha256": "7746deee96ca2e0c7b22be167c12d837031562a1374dad6453297ec5c04b2969",
+      "receive_syscalls": 3672075,
+      "receives_per_echo": 2.000041939020664,
+      "perf_csv": "# started on Sat Oct 24 23:59:23 2026\n\n3672075,,syscalls:sys_enter_recvfrom,3000535391,100.00,,\n"
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 39.811360677083336,
+      "requests": 1956808,
+      "requests_per_second": 652269.3333333334,
+      "rtt_max_us": 102.463,
+      "rtt_mean_us": 48.99305944119202,
+      "rtt_p50_us": 48.863,
+      "rtt_p95_us": 52.095,
+      "rtt_p99_us": 53.631,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "short-read",
+      "binary_sha256": "e1e83c65722157fe11dfce2b37718379486b649f57d18f249d0876a6af8fa577",
+      "receive_syscalls": 1956904,
+      "receives_per_echo": 1.0000490594887184,
+      "perf_csv": "# started on Sat Oct 24 23:59:26 2026\n\n1956904,,syscalls:sys_enter_recvfrom,2999355564,100.00,,\n"
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 41.949300130208336,
+      "requests": 2061892,
+      "requests_per_second": 687297.3333333334,
+      "rtt_max_us": 3131.391,
+      "rtt_mean_us": 46.493819480845765,
+      "rtt_p50_us": 47.583,
+      "rtt_p95_us": 51.967,
+      "rtt_p99_us": 54.431,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "tokio",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "tokio",
+      "binary_sha256": "7746deee96ca2e0c7b22be167c12d837031562a1374dad6453297ec5c04b2969",
+      "receive_syscalls": 2061956,
+      "receives_per_echo": 1.000031039453085,
+      "perf_csv": "# started on Sat Oct 24 23:59:29 2026\n\n2061956,,syscalls:sys_enter_recvfrom,3000558031,100.00,,\n"
+    }
+  ]
+}

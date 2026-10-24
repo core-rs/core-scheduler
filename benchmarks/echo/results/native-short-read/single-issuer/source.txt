@@ -1,0 +1,14 @@
+22b246853c609264f9112554075bf49eb2cc9af2
+diff --git a/crates/iouring/src/io_uring_selector.rs b/crates/iouring/src/io_uring_selector.rs
+index 9037ce7..c8b92d5 100644
+--- a/crates/iouring/src/io_uring_selector.rs
++++ b/crates/iouring/src/io_uring_selector.rs
+@@ -800,6 +800,7 @@ impl Reactor {
+         if !self.started {
+             if let Ok(ring) = syscall("cooperative-ring", || {
+                 IoUring::builder()
++                    .setup_single_issuer()
+                     .setup_coop_taskrun()
+                     .setup_taskrun_flag()
+                     .build(self.ring.params().sq_entries())
+e5285ddd9065f136e2557e54be7bb57ab84ab02f42b7e66ab90466b085e10f7b  Cargo.lock

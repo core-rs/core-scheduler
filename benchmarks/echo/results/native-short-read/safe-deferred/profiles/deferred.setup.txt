@@ -1,0 +1,2 @@
+       candidate  907898 [000] 89333.748075: io_uring:io_uring_create: ring 0xffff88aae126b000, fd 5 sq size 256, cq size 512, flags 0x0
+ core-native-tas  907900 [000] 89333.748307: io_uring:io_uring_create: ring 0xffff88a196a21800, fd 10 sq size 256, cq size 512, flags 0x3200

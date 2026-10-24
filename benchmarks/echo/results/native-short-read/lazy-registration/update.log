@@ -1,0 +1,4 @@
+     Locking 1 package to highest Rust 1.85 compatible version
+      Adding async-io v2.6.0 (/home/samuel/.cache/core-scheduler-native-lazy-registration/async-io)
+    Removing async-io v2.6.0
+note: pass `--verbose` to see 18 unchanged dependencies behind latest

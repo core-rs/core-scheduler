@@ -1,0 +1,14 @@
+# started on Sun Oct 25 00:00:36 2026
+
+1527655490,,cycles:u,3000435822,100.00,,
+2892100417,,instructions:u,3000435822,100.00,,
+14529866740,,cycles:k,3000435822,100.00,,
+27885918553,,instructions:k,3000435822,100.00,,
+128,,context-switches,3000435822,100.00,,
+0,,cpu-migrations,3000435822,100.00,,
+2010506,,syscalls:sys_enter_recvfrom,3000435822,100.00,,
+2010474,,syscalls:sys_enter_sendto,3000435822,100.00,,
+0,,syscalls:sys_enter_io_uring_enter,3000435822,100.00,,
+85079,,syscalls:sys_enter_epoll_wait,3000435822,100.00,,
+0,,syscalls:sys_enter_epoll_pwait,3000435822,100.00,,
+0,,syscalls:sys_enter_epoll_pwait2,3000435822,100.00,,

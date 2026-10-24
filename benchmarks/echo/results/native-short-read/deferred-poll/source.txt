@@ -1,0 +1,58 @@
+22b246853c609264f9112554075bf49eb2cc9af2
+diff --git a/crates/iouring/src/io_uring_selector.rs b/crates/iouring/src/io_uring_selector.rs
+index 9037ce7..8322dba 100644
+--- a/crates/iouring/src/io_uring_selector.rs
++++ b/crates/iouring/src/io_uring_selector.rs
+@@ -800,7 +800,8 @@ impl Reactor {
+         if !self.started {
+             if let Ok(ring) = syscall("cooperative-ring", || {
+                 IoUring::builder()
+-                    .setup_coop_taskrun()
++                    .setup_single_issuer()
++                    .setup_defer_taskrun()
+                     .setup_taskrun_flag()
+                     .build(self.ring.params().sq_entries())
+             }) {
+@@ -1187,7 +1188,10 @@ impl Reactor {
+             || !self.notification_armed
+             || crate::io_uring_worker::take_notification(&self.controller);
+         if return_to_executor {
+-            let needs_submit = {
++            let poll = timeout == Some(Duration::ZERO)
++                && !progressed
++                && self.ring.submission().is_empty();
++            let needs_submit = poll || {
+                 let submissions = self.ring.submission();
+                 (!submissions.is_empty() && !defer_submission)
+                     || submissions.cq_overflow()
+@@ -1198,7 +1202,19 @@ impl Reactor {
+                     .submission_notifications
+                     .pending()
+                     .then(|| self.ring.submission().len());
+-                let result = syscall("submit", || self.ring.submit());
++                let result = syscall("submit", || {
++                    if poll {
++                        let count = self.ring.submission().len() as u32;
++                        // SAFETY: This thread owns the ring. All published entries retain their owners; zero minimum completion count cannot block. GETEVENTS services deferred work without a borrowed pointer argument.
++                        unsafe {
++                            self.ring.submitter().enter::<libc::sigset_t>(
++                                count, 0, io_uring::EnterFlags::GETEVENTS.bits(), None,
++                            )
++                        }
++                    } else {
++                        self.ring.submit()
++                    }
++                });
+                 if let Some(before) = before {
+                     self.submission_notifications
+                         .consumed(before, self.ring.submission().len());
+@@ -1214,6 +1230,8 @@ impl Reactor {
+                         result?;
+                     }
+                 }
++                // Publish completions produced by this nonblocking entry before the executor checks its ready queues.
++                self.collect_completions()?;
+             }
+             return Ok(false);
+         }
+e5285ddd9065f136e2557e54be7bb57ab84ab02f42b7e66ab90466b085e10f7b  Cargo.lock

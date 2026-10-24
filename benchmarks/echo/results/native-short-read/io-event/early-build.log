@@ -1,0 +1,8 @@
+   Compiling core-scheduler-timers v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-io-event/crates/timers)
+   Compiling core-scheduler v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-io-event)
+   Compiling core-scheduler-selector v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-io-event/crates/selector)
+   Compiling core-scheduler-tokio v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-io-event/crates/tokio)
+   Compiling core-scheduler-native v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-io-event/crates/native)
+   Compiling core-scheduler-iouring v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-io-event/crates/iouring)
+   Compiling core-scheduler-echo-benchmark v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-io-event/benchmarks/echo)
+    Finished `release` profile [optimized + debuginfo] target(s) in 2.82s

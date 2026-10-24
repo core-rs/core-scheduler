@@ -1,0 +1,13 @@
+# started on Sun Oct 25 00:34:30 2026
+
+529310,,io_uring:io_uring_task_work_run,1649578098,100.00,,
+0,,io_uring:io_uring_local_work_run,1649578098,100.00,,
+30,,io_uring:io_uring_submit_req,1649578098,100.00,,
+0,,io_uring:io_uring_poll_arm,1649578098,100.00,,
+529311,,io_uring:io_uring_complete,1649578098,100.00,,
+1058562,,syscalls:sys_enter_recvfrom,1649578098,100.00,,
+529280,,syscalls:sys_enter_sendto,1649578098,100.00,,
+529286,,syscalls:sys_enter_io_uring_enter,1649578098,100.00,,
+0,,syscalls:sys_enter_epoll_wait,1649578098,100.00,,
+2,,syscalls:sys_enter_epoll_pwait,1649578098,100.00,,
+0,,syscalls:sys_enter_epoll_pwait2,1649578098,100.00,,

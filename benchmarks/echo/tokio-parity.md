@@ -62,6 +62,8 @@ The busy single-worker owned path is now 2.1–2.2% behind the conservative Toki
 
 Owned P99 improves from 56.959 to 53.631 µs for one worker/32 connections/64 bytes, and from 62.911 to 59.423 µs for the corresponding 4 KiB case. Other P99 changes vary; the JSON preserves every latency and throughput sample rather than deriving latency from throughput. Three repetitions do not establish a tight confidence interval.
 
+The [receive-policy and ring investigation](native-short-read.md) continues this comparison with a Native short-read diagnostic, syscall counts, CPU profiles, and controlled ring task-work experiments.
+
 ## Rejected alternatives
 
 Explicit `inline(always)` annotations produced a byte-identical Native `.text` section in the [compiler screen](results/tokio-parity/diagnostics/native-compiler-screen.json). Thin LTO changed Native throughput by only +0.65% in that short screen. Additional Tokio adapter prototypes produced no useful measured gain. No profile or Tokio production change is selected.

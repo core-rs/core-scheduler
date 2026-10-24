@@ -1,0 +1,83 @@
+diff --git a/crates/iouring/src/io_uring_selector/tests.rs b/crates/iouring/src/io_uring_selector/tests.rs
+index 7bf4998..bccdbc9 100644
+--- a/crates/iouring/src/io_uring_selector/tests.rs
++++ b/crates/iouring/src/io_uring_selector/tests.rs
+@@ -2306,6 +2306,78 @@ fn fresh_bound_worker_attempts_optional_upgrade_without_losing_queued_io() {
+     drive_bound_worker(&mut worker, selector.shutdown());
+ }
+ 
++fn pending_deferred_notification() -> Option<(IoUringSelector, IoUringDriver)> {
++    let (selector, mut driver) = pair(1);
++    driver.reactor.as_mut().unwrap().bind_worker();
++    if !driver
++        .reactor
++        .as_ref()
++        .unwrap()
++        .ring
++        .params()
++        .is_setup_single_issuer()
++    {
++        drain(&selector, &mut driver);
++        return None;
++    }
++    driver.turn(Some(Duration::ZERO)).unwrap();
++    driver.waker().wake_by_ref();
++    let deadline = Instant::now() + Duration::from_secs(10);
++    while !driver.reactor.as_mut().unwrap().ring.submission().taskrun() {
++        assert!(
++            Instant::now() < deadline,
++            "notification task work did not arrive"
++        );
++        std::thread::yield_now();
++    }
++    Some((selector, driver))
++}
++
++#[test]
++fn pending_kernel_work_is_published_before_the_first_completion_snapshot() {
++    let Some((selector, mut driver)) = pending_deferred_notification() else {
++        return;
++    };
++    let _hooks = Failures;
++    let collected = Arc::new(AtomicBool::new(false));
++    BEFORE_SYSCALL.with(|hook| {
++        let collected = Arc::clone(&collected);
++        *hook.borrow_mut() = Some((
++            "notification-read",
++            Box::new(move || collected.store(true, Ordering::SeqCst)),
++        ));
++    });
++    driver.turn(Some(Duration::ZERO)).unwrap();
++    assert!(collected.load(Ordering::SeqCst));
++    drain(&selector, &mut driver);
++}
++
++#[test]
++fn deferred_work_flush_retries_transient_errors_and_stops_after_fatal_errors() {
++    for error in [
++        io::ErrorKind::Interrupted.into(),
++        io::Error::from_raw_os_error(libc::EBUSY),
++        io::Error::from_raw_os_error(libc::EAGAIN),
++        io::ErrorKind::PermissionDenied.into(),
++    ] {
++        let Some((selector, mut driver)) = pending_deferred_notification() else {
++            return;
++        };
++        let fatal = error.kind() == io::ErrorKind::PermissionDenied;
++        let _failure = Failures::new([("get-events", error)]);
++        let result = driver.turn(Some(Duration::ZERO));
++        assert!(FAILURES.with(|failures| failures.borrow().is_empty()));
++        if fatal {
++            assert_eq!(result.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
++            assert!(driver.turn(None).unwrap());
++            block_on(selector.shutdown());
++        } else {
++            assert!(!result.unwrap());
++            drain(&selector, &mut driver);
++        }
++    }
++}
++
+ #[test]
+ fn optional_worker_upgrade_failures_preserve_the_valid_ring_and_queued_io() {
+     use core_scheduler_selector::SelectorDriver;

@@ -1,0 +1,93 @@
+22b246853c609264f9112554075bf49eb2cc9af2
+diff --git a/Cargo.lock b/Cargo.lock
+index acca515..04235c4 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -26,8 +26,6 @@ checksum = "beb9e990c0a33699f1984d85a6abead615ccc72dd8130bf3e15dcabe2ca149c9"
+ [[package]]
+ name = "async-io"
+ version = "2.6.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "456b8a8feb6f42d237746d4b3e9a178494627745c3c56c6ea55d92ba50d026fc"
+ dependencies = [
+  "autocfg",
+  "cfg-if",
+@@ -535,7 +533,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
+ dependencies = [
+  "libc",
+- "windows-sys 0.61.2",
++ "windows-sys 0.52.0",
+ ]
+ 
+ [[package]]
+@@ -1043,7 +1041,7 @@ dependencies = [
+  "errno",
+  "libc",
+  "linux-raw-sys",
+- "windows-sys 0.61.2",
++ "windows-sys 0.52.0",
+ ]
+ 
+ [[package]]
+@@ -1273,7 +1271,7 @@ dependencies = [
+  "getrandom 0.4.3",
+  "once_cell",
+  "rustix",
+- "windows-sys 0.61.2",
++ "windows-sys 0.52.0",
+ ]
+ 
+ [[package]]
+diff --git a/Cargo.toml b/Cargo.toml
+index cb06e92..d10e513 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -48,3 +48,6 @@ futures-lite = "2.6.1"
+ 
+ [target."cfg(unix)".dev-dependencies]
+ libc = "0.2"
++
++[patch.crates-io]
++async-io = { path = "/home/samuel/.cache/core-scheduler-native-lazy-registration/async-io" }
+--- /home/samuel/.cache/core-scheduler-native-lazy-registration/upstream-unix.rs	2026-10-25 00:14:51.175600899 +1300
++++ /home/samuel/.cache/core-scheduler-native-lazy-registration/async-io/src/reactor/unix.rs	2026-10-25 00:14:51.175629810 +1300
+@@ -36,9 +36,9 @@
+ 
+     /// Registers the object into the reactor.
+     #[inline]
+-    pub(crate) fn add(&self, poller: &Poller, token: usize) -> Result<()> {
+-        // SAFETY: This object's existence validates the invariants of Poller::add
+-        unsafe { poller.add(self.raw, Event::none(token)) }
++    pub(crate) fn add(&self, _poller: &Poller, _token: usize) -> Result<()> {
++        // Diagnostic only: do not attach an idle epoll callback before first interest.
++        Ok(())
+     }
+ 
+     /// Re-registers the object into the reactor.
+@@ -46,7 +46,13 @@
+     pub(crate) fn modify(&self, poller: &Poller, interest: Event) -> Result<()> {
+         // SAFETY: self.raw is a valid file descriptor
+         let fd = unsafe { BorrowedFd::borrow_raw(self.raw) };
+-        poller.modify(fd, interest)
++        match poller.modify(fd, interest) {
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
++                // SAFETY: The source retains this descriptor through its registration.
++                unsafe { poller.add(self.raw, interest) }
++            }
++            result => result,
++        }
+     }
+ 
+     /// Deregisters the object from the reactor.
+@@ -54,6 +60,9 @@
+     pub(crate) fn delete(&self, poller: &Poller) -> Result<()> {
+         // SAFETY: self.raw is a valid file descriptor
+         let fd = unsafe { BorrowedFd::borrow_raw(self.raw) };
+-        poller.delete(fd)
++        match poller.delete(fd) {
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
++            result => result,
++        }
+     }
+ }

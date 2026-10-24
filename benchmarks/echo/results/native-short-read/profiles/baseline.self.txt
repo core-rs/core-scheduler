@@ -1,0 +1,1843 @@
+# ========
+# captured on    : Sun Oct 25 00:01:10 2026
+# header version : 1
+# data offset    : 520
+# data size      : 49824632
+# feat offset    : 49825152
+# hostname : aiko
+# os release : 7.2.8-arch1-2
+# perf version : 7.2.8-2
+# arch : x86_64
+# nrcpus online : 32
+# nrcpus avail : 32
+# cpudesc : AMD Ryzen 9 9950X3D 16-Core Processor
+# cpuid : AuthenticAMD,26,68,0
+# total memory : 48436228 kB
+# cmdline : /usr/bin/perf 
+# event : name = cycles, , id = { 7342, 7343, 7344, 7345, 7346, 7347, 7348, 7349, 7350, 7351, 7352, 7353, 7354, 7355, 7356, 7357, 7358, 7359, 7360, 7361, 7362, 7363, 7364, 7365, 7366, 7367, 7368, 7369, 7370, 7371, 7372, 7373 }, type = 0 (PERF_TYPE_HARDWARE), size = 144, config = 0 (PERF_COUNT_HW_CPU_CYCLES), { sample_period, sample_freq } = 499, sample_type = IP|TID|TIME|CALLCHAIN|PERIOD|REGS_USER|STACK_USER, read_format = ID|LOST, disabled = 1, inherit = 1, mmap = 1, comm = 1, freq = 1, enable_on_exec = 1, task = 1, mmap_data = 1, sample_id_all = 1, exclude_callchain_user = 1, mmap2 = 1, comm_exec = 1, ksymbol = 1, bpf_event = 1, build_id = 1, sample_regs_user = 0xff0fff, sample_stack_user = 16384
+# CPU_TOPOLOGY info available, use -I to display
+# NUMA_TOPOLOGY info available, use -I to display
+# pmu mappings: cpu = 4, amd_iommu_0 = 12, breakpoint = 5, drm_amdgpu = 4294836224, hwmon_amdgpu = 4294901762, hwmon_asus = 4294901769, hwmon_asusec = 4294901765, hwmon_eno2 = 4294901768, hwmon_iwlwifi_1 = 4294901770, hwmon_k10temp = 4294901764, hwmon_nct6799 = 4294901763, hwmon_nvme = 4294901760, hwmon_nvme = 4294901761, hwmon_spd5118 = 4294901766, hwmon_spd5118 = 4294901767, ibs_fetch = 10, ibs_op = 11, kprobe = 8, msr = 13, power = 14, power_core = 15, software = 1, tool = 4294967294, tracepoint = 2, uprobe = 9
+# CACHE info available, use -I to display
+# time of first sample : 87710.308235
+# time of last sample : 87716.309937
+# sample duration :   6001.701 ms
+# MEM_TOPOLOGY info available, use -I to display
+# bpf_prog_info 24: bpf_prog_31efb7c56239148b_restrict_filesystems addr 0xffffffffc0085ad0 size 294
+# bpf_prog_info 47:
+# 	sub_prog 0: bpf_prog_9d21028d4f3abb5d_sysctl_monitor addr 0xffffffffc0090bf0 size 688
+# 	sub_prog 1: bpf_prog_417237dd50306dd0_cut_last addr 0xffffffffc0090ef0 size 109
+# bpf_prog_info 69: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a143c size 64
+# bpf_prog_info 70: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a14a0 size 64
+# bpf_prog_info 71: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a1518 size 268
+# bpf_prog_info 72: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a1660 size 268
+# bpf_prog_info 73: bpf_prog_feaab199760324c9_sd_devices addr 0xffffffffc00a1794 size 319
+# bpf_prog_info 74: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a1934 size 64
+# bpf_prog_info 75: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a19b0 size 64
+# bpf_prog_info 76: bpf_prog_feaab199760324c9_sd_devices addr 0xffffffffc00a1a1c size 319
+# bpf_prog_info 77: bpf_prog_98b7b6f166b26c8a_sd_devices addr 0xffffffffc00a1ba8 size 111
+# bpf_prog_info 78: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a1c5c size 268
+# bpf_prog_info 79: bpf_prog_71bba91db5466642_sd_devices addr 0xffffffffc00a1d90 size 490
+# bpf_prog_info 80: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a1fe4 size 64
+# bpf_prog_info 81: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a2050 size 64
+# bpf_prog_info 82: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a20e8 size 64
+# bpf_prog_info 83: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a215c size 64
+# bpf_prog_info 84: bpf_prog_c1591dae5f5bcd9f_sd_devices addr 0xffffffffc00a21d0 size 298
+# bpf_prog_info 85: bpf_prog_c1591dae5f5bcd9f_sd_devices addr 0xffffffffc00a2358 size 298
+# bpf_prog_info 86: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a24e8 size 268
+# bpf_prog_info 215: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc0094edc size 64
+# bpf_prog_info 216: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00994a8 size 64
+# bpf_prog_info 318: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc0086188 size 64
+# bpf_prog_info 319: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc0086230 size 64
+# btf info of id 33
+# btf info of id 132
+# cpu pmu capabilities: branches=16, max_precise=0
+# ibs_fetch pmu capabilities: zen4_ibs_extensions=1
+# ibs_op pmu capabilities: zen4_ibs_extensions=1, ldlat=1, dtlb_pgsize=1
+# AMD systems uses ibs_op// PMU for some precise events, e.g.: cycles:p, see the 'perf list' man page for further details.
+# CPU_DOMAIN_INFO info available, use -I to display
+# e_machine : 62
+#   e_flags : 0
+# cacheline size: 64
+# missing features: TRACING_DATA BUILD_ID BRANCH_STACK GROUP_DESC AUXTRACE STAT CLOCKID DIR_FORMAT COMPRESSED CLOCK_DATA HYBRID_TOPOLOGY 
+# ========
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 2K of event 'cycles'
+# Event count (approx.): 32043858286
+#
+# Overhead  Command          Shared Object      Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+# ........  ...............  .................  ..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+     5.01%  core-native-tas  [kernel.kallsyms]  [k] fdget
+            |
+            ---fdget
+               |          
+               |--3.56%--__sys_recvfrom
+               |          __x64_sys_recvfrom
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          recv
+               |          
+                --1.45%--__sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     4.99%  core-native-tas  [kernel.kallsyms]  [k] skb_release_data
+            |
+            ---skb_release_data
+               |          
+               |--2.56%--napi_consume_skb
+               |          skb_defer_free_flush
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+                --2.43%--__kfree_skb
+                          tcp_ack
+                          tcp_rcv_established
+                          tcp_v4_do_rcv
+                          tcp_v4_rcv
+                          ip_protocol_deliver_rcu
+                          ip_local_deliver_finish
+                          __netif_receive_skb_one_core
+                          process_backlog
+                          __napi_poll
+                          net_rx_action
+                          handle_softirqs
+                          do_softirq.part.0
+                          __local_bh_enable_ip
+                          __dev_queue_xmit
+                          ip_finish_output2
+                          ip_output
+                          __ip_queue_xmit
+                          __tcp_transmit_skb
+                          tcp_write_xmit
+                          __tcp_push_pending_frames
+                          tcp_sendmsg_locked
+                          tcp_sendmsg
+                          __sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     3.56%  core-native-tas  [kernel.kallsyms]  [k] __inet_lookup_established
+            |
+            ---__inet_lookup_established
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     3.14%  core-native-tas  [kernel.kallsyms]  [k] lock_sock_nested
+            |
+            ---lock_sock_nested
+               |          
+               |--2.06%--tcp_recvmsg
+               |          sock_recvmsg
+               |          __sys_recvfrom
+               |          __x64_sys_recvfrom
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          recv
+               |          
+                --1.08%--tcp_sendmsg
+                          __sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     2.59%  core-native-tas  [kernel.kallsyms]  [k] _raw_spin_lock_irq
+            |
+            ---_raw_spin_lock_irq
+               |          
+               |--2.15%--process_backlog
+               |          __napi_poll
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+                --0.44%--task_work_run
+                          get_signal
+                          arch_do_signal_or_restart
+                          exit_to_user_mode_loop
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          |          
+                          |--0.24%--send
+                          |          
+                           --0.20%--recv
+
+     2.56%  core-native-tas  [kernel.kallsyms]  [k] _raw_spin_lock_irqsave
+            |
+            ---_raw_spin_lock_irqsave
+               |          
+               |--1.15%--ep_poll_callback
+               |          __wake_up_common
+               |          __wake_up_sync_key
+               |          sock_def_readable
+               |          tcp_rcv_established
+               |          tcp_v4_do_rcv
+               |          tcp_v4_rcv
+               |          ip_protocol_deliver_rcu
+               |          ip_local_deliver_finish
+               |          __netif_receive_skb_one_core
+               |          process_backlog
+               |          __napi_poll
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+               |--0.40%--try_to_wake_up
+               |          ep_autoremove_wake_function
+               |          __wake_up_common
+               |          __wake_up_sync
+               |          ep_poll_callback
+               |          __wake_up_common
+               |          __wake_up_sync_key
+               |          sock_def_readable
+               |          tcp_rcv_established
+               |          tcp_v4_do_rcv
+               |          tcp_v4_rcv
+               |          ip_protocol_deliver_rcu
+               |          ip_local_deliver_finish
+               |          __netif_receive_skb_one_core
+               |          process_backlog
+               |          __napi_poll
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+               |--0.37%--__wake_up_sync
+               |          ep_poll_callback
+               |          __wake_up_common
+               |          __wake_up_sync_key
+               |          sock_def_readable
+               |          tcp_rcv_established
+               |          tcp_v4_do_rcv
+               |          tcp_v4_rcv
+               |          ip_protocol_deliver_rcu
+               |          ip_local_deliver_finish
+               |          __netif_receive_skb_one_core
+               |          process_backlog
+               |          __napi_poll
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+               |--0.34%--__wake_up_sync_key
+               |          sock_def_readable
+               |          tcp_rcv_established
+               |          tcp_v4_do_rcv
+               |          tcp_v4_rcv
+               |          ip_protocol_deliver_rcu
+               |          ip_local_deliver_finish
+               |          __netif_receive_skb_one_core
+               |          process_backlog
+               |          __napi_poll
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+                --0.20%--lock_timer_base
+                          __mod_timer
+                          sk_reset_timer
+
+     2.52%  core-native-tas  [kernel.kallsyms]  [k] _raw_spin_lock_bh
+            |
+            ---_raw_spin_lock_bh
+               |          
+               |--2.12%--release_sock
+               |          |          
+               |          |--1.18%--tcp_recvmsg
+               |          |          sock_recvmsg
+               |          |          __sys_recvfrom
+               |          |          __x64_sys_recvfrom
+               |          |          do_syscall_64
+               |          |          entry_SYSCALL_64_after_hwframe
+               |          |          0x7f32850a08f2
+               |          |          recv
+               |          |          
+               |           --0.94%--tcp_sendmsg
+               |                     __sys_sendto
+               |                     __x64_sys_sendto
+               |                     do_syscall_64
+               |                     entry_SYSCALL_64_after_hwframe
+               |                     0x7f32850a08f2
+               |                     send
+               |          
+                --0.40%--0xffffffffc3d52f4e
+                          0xffffffffc3d4c68d
+                          nf_hook_slow
+                          __ip_local_out
+                          ip_local_out
+                          __ip_queue_xmit
+                          __tcp_transmit_skb
+                          tcp_write_xmit
+                          __tcp_push_pending_frames
+                          tcp_sendmsg_locked
+                          tcp_sendmsg
+                          __sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     2.42%  core-native-tas  [kernel.kallsyms]  [k] kfree_skbmem
+            |
+            ---kfree_skbmem
+               |          
+               |--1.48%--skb_defer_free_flush
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+                --0.94%--tcp_ack
+                          tcp_rcv_established
+                          tcp_v4_do_rcv
+                          tcp_v4_rcv
+                          ip_protocol_deliver_rcu
+                          ip_local_deliver_finish
+                          __netif_receive_skb_one_core
+                          process_backlog
+                          __napi_poll
+                          net_rx_action
+                          handle_softirqs
+                          do_softirq.part.0
+                          __local_bh_enable_ip
+                          __dev_queue_xmit
+                          ip_finish_output2
+                          ip_output
+                          __ip_queue_xmit
+                          __tcp_transmit_skb
+                          tcp_write_xmit
+                          __tcp_push_pending_frames
+                          tcp_sendmsg_locked
+                          tcp_sendmsg
+                          __sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     2.25%  core-native-tas  [kernel.kallsyms]  [k] tcp_v4_rcv
+            |
+            ---tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     2.19%  core-native-tas  [kernel.kallsyms]  [k] skb_defer_free_flush
+            |
+            ---skb_defer_free_flush
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     2.02%  core-native-tas  [nf_conntrack]     [k] 0x0000000000003dcd
+            |
+            ---0xffffffffc3d4bdcd
+               0xffffffffc3d4c342
+               nf_hook_slow
+               __ip_local_out
+               ip_local_out
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.91%  core-native-tas  [kernel.kallsyms]  [k] tctx_task_work_run
+            |
+            ---tctx_task_work_run
+               tctx_task_work
+               task_work_run
+               get_signal
+               arch_do_signal_or_restart
+               exit_to_user_mode_loop
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               |          
+               |--1.51%--send
+               |          
+                --0.40%--recv
+
+     1.85%  core-native-tas  [kernel.kallsyms]  [k] _raw_spin_lock
+            |
+            ---_raw_spin_lock
+               |          
+               |--0.54%--io_req_post_cqe
+               |          io_poll_task_func
+               |          tctx_task_work_run
+               |          tctx_task_work
+               |          task_work_run
+               |          get_signal
+               |          arch_do_signal_or_restart
+               |          exit_to_user_mode_loop
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          |          
+               |          |--0.34%--send
+               |          |          
+               |           --0.20%--recv
+               |          
+               |--0.50%--tcp_v4_rcv
+               |          ip_protocol_deliver_rcu
+               |          ip_local_deliver_finish
+               |          __netif_receive_skb_one_core
+               |          process_backlog
+               |          __napi_poll
+               |          net_rx_action
+               |          handle_softirqs
+               |          do_softirq.part.0
+               |          __local_bh_enable_ip
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+               |--0.44%--enqueue_to_backlog
+               |          netif_rx_internal
+               |          __netif_rx
+               |          loopback_xmit
+               |          dev_hard_start_xmit
+               |          __dev_queue_xmit
+               |          ip_finish_output2
+               |          ip_output
+               |          __ip_queue_xmit
+               |          __tcp_transmit_skb
+               |          tcp_write_xmit
+               |          __tcp_push_pending_frames
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+                --0.34%--__io_submit_flush_completions
+                          ctx_flush_and_put.isra.0
+                          tctx_task_work_run
+                          tctx_task_work
+                          task_work_run
+                          get_signal
+                          arch_do_signal_or_restart
+                          exit_to_user_mode_loop
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          |          
+                           --0.30%--send
+
+     1.75%  core-native-tas  [kernel.kallsyms]  [k] tcp_sendmsg_locked
+            |
+            ---tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.75%  core-native-tas  [kernel.kallsyms]  [k] tcp_rcv_established
+            |
+            ---tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.72%  core-native-tas  final-postbatch    [.] <async_task::raw::RawTask<core_scheduler_native::native_task::TaskFuture<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>, core_scheduler_native::native_task::TaskOutcome<()>, <core_scheduler_native::task_service::TaskService>::spawn<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>::{closure#1}, core_scheduler_native::task_service::TaskState>>::clone_waker
+     1.71%  core-native-tas  [kernel.kallsyms]  [k] __copy_skb_header
+            |
+            ---__copy_skb_header
+               skb_clone
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.68%  core-native-tas  [kernel.kallsyms]  [k] ktime_get_with_offset
+            |
+            ---ktime_get_with_offset
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.68%  core-native-tas  [kernel.kallsyms]  [k] dst_release
+            |
+            ---dst_release
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.68%  core-native-tas  [kernel.kallsyms]  [k] tcp_wfree
+            |
+            ---tcp_wfree
+               loopback_xmit
+               dev_hard_start_xmit
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.55%  core-native-tas  [kernel.kallsyms]  [k] sock_rfree
+            |
+            ---sock_rfree
+               tcp_recvmsg_locked
+               tcp_recvmsg
+               sock_recvmsg
+               __sys_recvfrom
+               __x64_sys_recvfrom
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               recv
+
+     1.48%  core-native-tas  [kernel.kallsyms]  [k] __check_object_size
+            |
+            ---__check_object_size
+               |          
+                --1.31%--simple_copy_to_iter
+                          __skb_datagram_iter
+                          skb_copy_datagram_iter
+                          tcp_recvmsg_locked
+                          tcp_recvmsg
+                          sock_recvmsg
+                          __sys_recvfrom
+                          __x64_sys_recvfrom
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          recv
+
+     1.45%  core-native-tas  final-postbatch    [.] <async_task::raw::RawTask<core_scheduler_native::native_task::TaskFuture<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>, core_scheduler_native::native_task::TaskOutcome<()>, <core_scheduler_native::task_service::TaskService>::spawn<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>::{closure#1}, core_scheduler_native::task_service::TaskState>>::run
+     1.43%  core-native-tas  [kernel.kallsyms]  [k] ip_send_check
+            |
+            ---ip_send_check
+               __ip_local_out
+               ip_local_out
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.38%  core-native-tas  [kernel.kallsyms]  [k] skb_page_frag_refill
+            |
+            ---skb_page_frag_refill
+               sk_page_frag_refill
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.38%  core-native-tas  [kernel.kallsyms]  [k] sock_def_readable
+            |
+            ---sock_def_readable
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.38%  core-native-tas  [kernel.kallsyms]  [k] _copy_to_iter
+            |
+            ---_copy_to_iter
+               __skb_datagram_iter
+               skb_copy_datagram_iter
+               tcp_recvmsg_locked
+               tcp_recvmsg
+               sock_recvmsg
+               __sys_recvfrom
+               __x64_sys_recvfrom
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               recv
+
+     1.34%  core-native-tas  [kernel.kallsyms]  [k] fput
+            |
+            ---fput
+               |          
+               |--1.01%--__sys_recvfrom
+               |          __x64_sys_recvfrom
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          recv
+               |          
+                --0.34%--__sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     1.34%  core-native-tas  [kernel.kallsyms]  [k] __dev_queue_xmit
+            |
+            ---__dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.31%  core-native-tas  [kernel.kallsyms]  [k] mutex_lock
+            |
+            ---mutex_lock
+               tctx_task_work_run
+               tctx_task_work
+               task_work_run
+               |          
+                --1.28%--get_signal
+                          arch_do_signal_or_restart
+                          exit_to_user_mode_loop
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          |          
+                          |--1.04%--send
+                          |          
+                           --0.23%--recv
+
+     1.27%  core-native-tas  [kernel.kallsyms]  [k] tcp_event_new_data_sent
+            |
+            ---tcp_event_new_data_sent
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     1.21%  core-native-tas  [kernel.kallsyms]  [k] entry_SYSCALL_64
+            |
+            ---entry_SYSCALL_64
+               0x7f32850a08f2
+               |          
+               |--0.77%--recv
+               |          
+                --0.44%--send
+
+     1.18%  core-native-tas  [kernel.kallsyms]  [k] kmem_cache_alloc_node_noprof
+            |
+            ---kmem_cache_alloc_node_noprof
+               |          
+               |--0.60%--kmalloc_reserve
+               |          __alloc_skb
+               |          tcp_stream_alloc_skb
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+                --0.58%--__alloc_skb
+                          tcp_stream_alloc_skb
+                          tcp_sendmsg_locked
+                          tcp_sendmsg
+                          __sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     1.18%  core-native-tas  [kernel.kallsyms]  [k] skb_attempt_defer_free
+            |
+            ---skb_attempt_defer_free
+               tcp_recvmsg_locked
+               tcp_recvmsg
+               sock_recvmsg
+               __sys_recvfrom
+               __x64_sys_recvfrom
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               recv
+
+     1.04%  core-native-tas  [kernel.kallsyms]  [k] tcp_rcv_space_adjust
+            |
+            ---tcp_rcv_space_adjust
+               tcp_recvmsg_locked
+               tcp_recvmsg
+               sock_recvmsg
+               __sys_recvfrom
+               __x64_sys_recvfrom
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               recv
+
+     1.04%  core-native-tas  final-postbatch    [.] <core_scheduler_iouring::io_uring_socket_stream_writer::IoUringSocketStreamWriter<core_scheduler_iouring::io_uring_buffer::IoUringBuffer> as core_scheduler::socket_stream_writer::SocketStreamWriter>::write::{closure#0}
+     0.95%  core-native-tas  final-postbatch    [.] <core_scheduler_iouring::io_uring_socket_stream_reader::IoUringSocketStreamReader as core_scheduler::socket_stream_reader::SocketStreamReader>::read_into::{closure#0}
+     0.92%  core-native-tas  [kernel.kallsyms]  [k] __siphash_unaligned
+            |
+            ---__siphash_unaligned
+               0xffffffffc3d485d6
+               0xffffffffc3d4c32d
+               nf_hook_slow
+               __ip_local_out
+               ip_local_out
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.84%  core-native-tas  [kernel.kallsyms]  [k] task_work_run
+            |
+            ---task_work_run
+               |          
+                --0.81%--get_signal
+                          arch_do_signal_or_restart
+                          exit_to_user_mode_loop
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          |          
+                           --0.64%--send
+
+     0.81%  core-native-tas  [kernel.kallsyms]  [k] tcp_ack
+            |
+            ---tcp_ack
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.81%  core-native-tas  [kernel.kallsyms]  [k] ip_finish_output2
+            |
+            ---ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.71%  core-native-tas  final-postbatch    [.] <core_scheduler_iouring::io_uring_selector::IoUringSelector>::poll_monitor_wait
+     0.71%  core-native-tas  [nf_conntrack]     [k] 0x0000000000003cbe
+            |
+            ---0xffffffffc3d4bcbe
+               0xffffffffc3d4c342
+               nf_hook_slow
+               __ip_local_out
+               ip_local_out
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.64%  core-native-tas  [kernel.kallsyms]  [k] skb_clone
+            |
+            ---skb_clone
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.64%  core-native-tas  [kernel.kallsyms]  [k] __tcp_transmit_skb
+            |
+            ---__tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.60%  core-native-tas  [kernel.kallsyms]  [k] get_signal
+            |
+            ---get_signal
+               arch_do_signal_or_restart
+               exit_to_user_mode_loop
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               |          
+               |--0.34%--send
+               |          
+                --0.27%--recv
+
+     0.54%  core-native-tas  [kernel.kallsyms]  [k] io_poll_task_func
+            |
+            ---io_poll_task_func
+               tctx_task_work_run
+               tctx_task_work
+               task_work_run
+               |          
+                --0.51%--get_signal
+                          arch_do_signal_or_restart
+                          exit_to_user_mode_loop
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          |          
+                           --0.34%--send
+
+     0.54%  core-native-tas  final-postbatch    [.] core_scheduler_native::worker::run_loop
+     0.54%  core-native-tas  [nf_conntrack]     [k] 0x00000000000047eb
+            |
+            ---0xffffffffc3d4c7eb
+               nf_hook_slow
+               __ip_local_out
+               ip_local_out
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.54%  core-native-tas  [kernel.kallsyms]  [k] memset
+            |
+            ---memset
+               kmem_cache_alloc_node_noprof
+               |          
+               |--0.34%--kmalloc_reserve
+               |          __alloc_skb
+               |          tcp_stream_alloc_skb
+               |          tcp_sendmsg_locked
+               |          tcp_sendmsg
+               |          __sys_sendto
+               |          __x64_sys_sendto
+               |          do_syscall_64
+               |          entry_SYSCALL_64_after_hwframe
+               |          0x7f32850a08f2
+               |          send
+               |          
+                --0.20%--__alloc_skb
+                          tcp_stream_alloc_skb
+                          tcp_sendmsg_locked
+                          tcp_sendmsg
+                          __sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     0.50%  core-native-tas  final-postbatch    [.] <core_scheduler_iouring::io_uring_selector::monitor::IoUringMonitorRegistration>::notify
+     0.47%  core-native-tas  [kernel.kallsyms]  [k] __ip_queue_xmit
+            |
+            ---__ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.47%  core-native-tas  final-postbatch    [.] core_scheduler_native::worker::schedule
+     0.47%  core-native-tas  final-postbatch    [.] <async_task::raw::RawTask<core_scheduler_native::native_task::TaskFuture<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>, core_scheduler_native::native_task::TaskOutcome<()>, <core_scheduler_native::task_service::TaskService>::spawn<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>::{closure#1}, core_scheduler_native::task_service::TaskState>>::wake
+     0.44%  core-native-tas  [kernel.kallsyms]  [k] native_sched_clock
+            |
+            ---native_sched_clock
+               sched_clock
+               sched_clock_cpu
+               |          
+                --0.40%--irqtime_account_irq
+                          |          
+                           --0.37%--handle_softirqs
+                                     do_softirq.part.0
+                                     __local_bh_enable_ip
+                                     __dev_queue_xmit
+                                     ip_finish_output2
+                                     ip_output
+                                     __ip_queue_xmit
+                                     __tcp_transmit_skb
+                                     tcp_write_xmit
+                                     __tcp_push_pending_frames
+                                     tcp_sendmsg_locked
+                                     tcp_sendmsg
+                                     __sys_sendto
+                                     __x64_sys_sendto
+                                     do_syscall_64
+                                     entry_SYSCALL_64_after_hwframe
+                                     0x7f32850a08f2
+                                     send
+
+     0.40%  core-native-tas  [kernel.kallsyms]  [k] __virt_addr_valid
+            |
+            ---__virt_addr_valid
+               __check_object_size
+               |          
+                --0.30%--simple_copy_to_iter
+                          __skb_datagram_iter
+                          skb_copy_datagram_iter
+                          tcp_recvmsg_locked
+                          tcp_recvmsg
+                          sock_recvmsg
+                          __sys_recvfrom
+                          __x64_sys_recvfrom
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          recv
+
+     0.40%  core-native-tas  [kernel.kallsyms]  [k] __smp_call_single_queue
+            |
+            ---__smp_call_single_queue
+               ttwu_queue_wakelist
+               try_to_wake_up
+               ep_autoremove_wake_function
+               __wake_up_common
+               __wake_up_sync
+               ep_poll_callback
+               __wake_up_common
+               __wake_up_sync_key
+               sock_def_readable
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.37%  core-native-tas  [kernel.kallsyms]  [k] tcp_tso_segs
+            |
+            ---tcp_tso_segs
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.37%  core-native-tas  [kernel.kallsyms]  [k] native_queued_spin_lock_slowpath
+            |
+            ---native_queued_spin_lock_slowpath
+               |          
+                --0.34%--_raw_spin_lock
+                          raw_spin_rq_lock_nested
+                          ___task_rq_lock
+                          try_to_wake_up
+                          ep_autoremove_wake_function
+                          __wake_up_common
+                          __wake_up_sync
+                          ep_poll_callback
+                          __wake_up_common
+                          __wake_up_sync_key
+                          sock_def_readable
+                          tcp_rcv_established
+                          tcp_v4_do_rcv
+                          tcp_v4_rcv
+                          ip_protocol_deliver_rcu
+                          ip_local_deliver_finish
+                          __netif_receive_skb_one_core
+                          process_backlog
+                          __napi_poll
+                          net_rx_action
+                          handle_softirqs
+                          do_softirq.part.0
+                          __local_bh_enable_ip
+                          __dev_queue_xmit
+                          ip_finish_output2
+                          ip_output
+                          __ip_queue_xmit
+                          __tcp_transmit_skb
+                          tcp_write_xmit
+                          __tcp_push_pending_frames
+                          tcp_sendmsg_locked
+                          tcp_sendmsg
+                          __sys_sendto
+                          __x64_sys_sendto
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+                          send
+
+     0.34%  core-native-tas  [kernel.kallsyms]  [k] net_rx_action
+            |
+            ---net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.34%  core-native-tas  [kernel.kallsyms]  [k] do_syscall_64
+            |
+            ---do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               |          
+                --0.20%--send
+
+     0.34%  core-native-tas  [kernel.kallsyms]  [k] __skb_datagram_iter
+            |
+            ---__skb_datagram_iter
+               skb_copy_datagram_iter
+               tcp_recvmsg_locked
+               tcp_recvmsg
+               sock_recvmsg
+               __sys_recvfrom
+               __x64_sys_recvfrom
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               recv
+
+     0.34%  core-native-tas  [kernel.kallsyms]  [k] __alloc_skb
+            |
+            ---__alloc_skb
+               tcp_stream_alloc_skb
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.30%  core-native-tas  [kernel.kallsyms]  [k] tcp_update_pacing_rate
+            |
+            ---tcp_update_pacing_rate
+               tcp_ack
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.27%  core-native-tas  [kernel.kallsyms]  [k] __rcu_read_lock
+            |
+            ---__rcu_read_lock
+
+     0.27%  core-native-tas  [kernel.kallsyms]  [k] sk_free
+            |
+            ---sk_free
+               loopback_xmit
+               dev_hard_start_xmit
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.27%  core-native-tas  [kernel.kallsyms]  [k] nf_hook_slow
+            |
+            ---nf_hook_slow
+
+     0.27%  core-native-tas  [kernel.kallsyms]  [k] handle_softirqs
+            |
+            ---handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.27%  core-native-tas  [kernel.kallsyms]  [k] tcp_skb_entail
+            |
+            ---tcp_skb_entail
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.27%  core-native-tas  [kernel.kallsyms]  [k] ctx_flush_and_put.isra.0
+            |
+            ---ctx_flush_and_put.isra.0
+               tctx_task_work_run
+               tctx_task_work
+               task_work_run
+               get_signal
+               arch_do_signal_or_restart
+               exit_to_user_mode_loop
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+
+     0.23%  core-native-tas  [kernel.kallsyms]  [k] tcp_queue_rcv
+            |
+            ---tcp_queue_rcv
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.23%  core-native-tas  [nf_conntrack]     [k] 0x0000000000009b24
+            |
+            ---0xffffffffc3d51b24
+               nf_hook_slow
+
+     0.23%  core-native-tas  [kernel.kallsyms]  [k] try_charge_memcg
+            |
+            ---try_charge_memcg
+               mem_cgroup_sk_charge
+               sk_forced_mem_schedule
+               tcp_stream_alloc_skb
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.23%  core-native-tas  [kernel.kallsyms]  [k] call_function_single_prep_ipi
+            |
+            ---call_function_single_prep_ipi
+               __smp_call_single_queue
+               ttwu_queue_wakelist
+               try_to_wake_up
+               ep_autoremove_wake_function
+               __wake_up_common
+               __wake_up_sync
+               ep_poll_callback
+               __wake_up_common
+               __wake_up_sync_key
+               sock_def_readable
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.23%  core-native-tas  [kernel.kallsyms]  [k] ip_rcv_finish_core
+            |
+            ---ip_rcv_finish_core
+               ip_rcv
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.23%  core-native-tas  final-postbatch    [.] <async_task::raw::RawTask<core_scheduler_native::native_task::TaskFuture<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>, core_scheduler_native::native_task::TaskOutcome<()>, <core_scheduler_native::task_service::TaskService>::spawn<core_scheduler_echo_benchmark::server::scheduler_server<core_scheduler_native::native_scheduler::NativeScheduler<core_scheduler_iouring::io_uring_selector::IoUringSelector>>::{closure#0}::{closure#0}>::{closure#1}, core_scheduler_native::task_service::TaskState>>::drop_waker
+     0.23%  core-native-tas  [kernel.kallsyms]  [k] __rcu_read_unlock
+            |
+            ---__rcu_read_unlock
+
+     0.23%  core-native-tas  [kernel.kallsyms]  [k] __io_submit_flush_completions
+            |
+            ---__io_submit_flush_completions
+               ctx_flush_and_put.isra.0
+               tctx_task_work_run
+               tctx_task_work
+               task_work_run
+               |          
+                --0.20%--get_signal
+                          arch_do_signal_or_restart
+                          exit_to_user_mode_loop
+                          do_syscall_64
+                          entry_SYSCALL_64_after_hwframe
+                          0x7f32850a08f2
+
+     0.23%  core-native-tas  [kernel.kallsyms]  [k] default_send_IPI_single_phys
+            |
+            ---default_send_IPI_single_phys
+               ttwu_queue_wakelist
+               try_to_wake_up
+               ep_autoremove_wake_function
+               __wake_up_common
+               __wake_up_sync
+               ep_poll_callback
+               __wake_up_common
+               __wake_up_sync_key
+               sock_def_readable
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.21%  core-native-tas  [nf_conntrack]     [k] 0x0000000000003ca7
+            |
+            ---0xffffffffc3d4bca7
+               0xffffffffc3d4c342
+               nf_hook_slow
+               __ip_local_out
+               ip_local_out
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.20%  core-native-tas  [kernel.kallsyms]  [k] ip_rcv
+            |
+            ---ip_rcv
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.20%  core-native-tas  [kernel.kallsyms]  [k] prandom_u32_state
+            |
+            ---prandom_u32_state
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+
+     0.20%  core-native-tas  [kernel.kallsyms]  [k] ktime_get
+            |
+            ---ktime_get
+
+     0.20%  core-native-tas  [kernel.kallsyms]  [k] kmalloc_reserve
+            |
+            ---kmalloc_reserve
+               __alloc_skb
+               tcp_stream_alloc_skb
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+     0.20%  core-native-tas  [kernel.kallsyms]  [k] __sys_recvfrom
+            |
+            ---__sys_recvfrom
+               __x64_sys_recvfrom
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               recv
+
+     0.20%  core-native-tas  [kernel.kallsyms]  [k] cubictcp_cong_avoid
+            |
+            ---cubictcp_cong_avoid
+               tcp_ack
+               tcp_rcv_established
+               tcp_v4_do_rcv
+               tcp_v4_rcv
+               ip_protocol_deliver_rcu
+               ip_local_deliver_finish
+               __netif_receive_skb_one_core
+               process_backlog
+               __napi_poll
+               net_rx_action
+               handle_softirqs
+               do_softirq.part.0
+               __local_bh_enable_ip
+               __dev_queue_xmit
+               ip_finish_output2
+               ip_output
+               __ip_queue_xmit
+               __tcp_transmit_skb
+               tcp_write_xmit
+               __tcp_push_pending_frames
+               tcp_sendmsg_locked
+               tcp_sendmsg
+               __sys_sendto
+               __x64_sys_sendto
+               do_syscall_64
+               entry_SYSCALL_64_after_hwframe
+               0x7f32850a08f2
+               send
+
+
+
+#
+# (Tip: If you prefer Intel style assembly, try: perf annotate -M intel)
+#

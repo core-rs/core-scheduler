@@ -1,0 +1,154 @@
+e3b67a578cf8b7e57b0b3e8623a0f40439fe7c33
+diff --git a/crates/iouring/src/io_uring_selector.rs b/crates/iouring/src/io_uring_selector.rs
+index 9037ce7..d191e4f 100644
+--- a/crates/iouring/src/io_uring_selector.rs
++++ b/crates/iouring/src/io_uring_selector.rs
+@@ -800,7 +800,8 @@ impl Reactor {
+         if !self.started {
+             if let Ok(ring) = syscall("cooperative-ring", || {
+                 IoUring::builder()
+-                    .setup_coop_taskrun()
++                    .setup_single_issuer()
++                    .setup_defer_taskrun()
+                     .setup_taskrun_flag()
+                     .build(self.ring.params().sq_entries())
+             }) {
+@@ -1085,11 +1086,8 @@ impl Reactor {
+             );
+         }
+ 
+-        let defer_submission;
+         {
+             let (submitter, mut submissions, _) = self.ring.split();
+-            let had_submissions = !submissions.is_empty();
+-            let mut prepared = false;
+             while let Some(&identifier) = self.cancellations.front() {
+                 let entry = opcode::AsyncCancel::new(identifier)
+                     .build()
+@@ -1120,7 +1118,6 @@ impl Reactor {
+                 let request = self.in_flight.0.entry(identifier).or_insert(request);
+                 let entry = request.entry();
+                 progressed |= request.entry_may_wake();
+-                prepared = true;
+                 // SAFETY: InFlight owns the buffer allocation and descriptor before publication. Neither is released or accessed until the original CQE, even when cancellation completes first. A failed push does not publish the entry.
+                 unsafe { submissions.push(&entry) }
+                     .expect("submission capacity was checked and the local queue has not changed");
+@@ -1139,7 +1136,6 @@ impl Reactor {
+                     continue;
+                 }
+                 let entry = self.monitors.insert(submission);
+-                prepared = true;
+                 // SAFETY: The monitor table retains the stable record and socket before publication. Both original and cancellation CQEs must retire before the record can be reused.
+                 unsafe { submissions.push(&entry) }
+                     .expect("monitor submission capacity was checked");
+@@ -1157,14 +1153,59 @@ impl Reactor {
+                     .expect("submission capacity was checked and the local queue has not changed");
+                 self.notification_armed = true;
+             }
+-            // A readiness-only batch can join the next idle wait. Existing SQ entries must be submitted on this turn, even if tasks stay busy.
+-            defer_submission = prepared
+-                && !progressed
+-                && !command_batch_full
+-                && !had_submissions
+-                && timeout == Some(Duration::ZERO);
+         }
+ 
++        let needs_submit = {
++            let submissions = self.ring.submission();
++            !submissions.is_empty() || submissions.cq_overflow() || submissions.taskrun()
++        };
++        if needs_submit {
++            let before = self
++                .submission_notifications
++                .pending()
++                .then(|| self.ring.submission().len());
++            let result = syscall("submit", || self.ring.submit());
++            if let Some(before) = before {
++                self.submission_notifications
++                    .consumed(before, self.ring.submission().len());
++            }
++            match result {
++                Err(error)
++                    if error.kind() == io::ErrorKind::Interrupted
++                        || matches!(error.raw_os_error(), Some(libc::EBUSY | libc::EAGAIN)) =>
++                {
++                    return Ok(false);
++                }
++                result => {
++                    result?;
++                }
++            }
++        }
++
++        // Flush task work arriving during submission before inspecting completions. Never enter merely to check an idle ring.
++        if self.ring.submission().taskrun() {
++            let result = syscall("get-events", || {
++                // SAFETY: This thread owns the ring. No entries are submitted and zero required completions cannot block. GETEVENTS processes kernel work without retaining any argument pointer.
++                unsafe {
++                    self.ring.submitter().enter::<libc::sigset_t>(
++                        0,
++                        0,
++                        io_uring::EnterFlags::GETEVENTS.bits(),
++                        None,
++                    )
++                }
++            });
++            match result {
++                Err(error)
++                    if error.kind() == io::ErrorKind::Interrupted
++                        || matches!(error.raw_os_error(), Some(libc::EBUSY | libc::EAGAIN)) => {}
++                result => {
++                    result?;
++                }
++            }
++        }
++        progressed |= self.collect_completions()?;
++
+         if self.closing
+             && !command_batch_full
+             && self.in_flight.0.is_empty()
+@@ -1175,7 +1216,7 @@ impl Reactor {
+             return Ok(true);
+         }
+ 
+-        // Nonblocking turns may stage one readiness-only batch for the next turn. An idle wait submits it and waits in one entry; a busy worker submits it on its next nonblocking turn. Overflow and task work always enter. Short-circuiting preserves the local permit through productive turns. At the actual wait decision, consume it; the armed poll retains remote notifications until their CQE drains the counter.
++        // Return after productive work. At the actual wait decision, consume the local permit; the armed poll retains remote notifications until their CQE drains the counter.
+         let return_to_executor = progressed
+             // Issuance waiters may need to run before their I/O can complete. Never enter a blocking completion wait while an unconsumed SQE still owes its caller a submission notification.
+             || self.submission_notifications.pending()
+@@ -1187,34 +1228,6 @@ impl Reactor {
+             || !self.notification_armed
+             || crate::io_uring_worker::take_notification(&self.controller);
+         if return_to_executor {
+-            let needs_submit = {
+-                let submissions = self.ring.submission();
+-                (!submissions.is_empty() && !defer_submission)
+-                    || submissions.cq_overflow()
+-                    || submissions.taskrun()
+-            };
+-            if needs_submit {
+-                let before = self
+-                    .submission_notifications
+-                    .pending()
+-                    .then(|| self.ring.submission().len());
+-                let result = syscall("submit", || self.ring.submit());
+-                if let Some(before) = before {
+-                    self.submission_notifications
+-                        .consumed(before, self.ring.submission().len());
+-                }
+-                match result {
+-                    Err(error)
+-                        if error.kind() == io::ErrorKind::Interrupted
+-                            || matches!(error.raw_os_error(), Some(libc::EBUSY | libc::EAGAIN)) =>
+-                    {
+-                        return Ok(false);
+-                    }
+-                    result => {
+-                        result?;
+-                    }
+-                }
+-            }
+             return Ok(false);
+         }
+         let result = syscall("wait", || match timeout {
+e5285ddd9065f136e2557e54be7bb57ab84ab02f42b7e66ab90466b085e10f7b  Cargo.lock

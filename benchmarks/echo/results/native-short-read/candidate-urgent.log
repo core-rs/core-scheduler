@@ -1,0 +1,31 @@
+   Compiling rustix v1.1.5
+   Compiling fastrand v2.5.0
+   Compiling getrandom v0.4.3
+   Compiling once_cell v1.21.4
+   Compiling allocation-counter v0.8.1
+   Compiling futures-lite v2.6.1
+   Compiling core-scheduler-conformance v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-short-read/crates/conformance)
+   Compiling polling v3.11.0
+   Compiling tempfile v3.27.0
+   Compiling async-io v2.6.0
+   Compiling core-scheduler-selector v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-short-read/crates/selector)
+   Compiling core-scheduler-native v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-short-read/crates/native)
+   Compiling core-scheduler-iouring v0.0.0 (/home/samuel/Developer/core-rs/core-scheduler-native-short-read/crates/iouring)
+    Finished `release` profile [optimized + debuginfo] target(s) in 3.52s
+     Running tests/short_read_diagnostic.rs (/home/samuel/.cache/core-scheduler-native-short-read/build/release/deps/short_read_diagnostic-625a87047c46e745)
+
+running 1 test
+
+thread 'ordinary_bytes_after_an_urgent_mark_remain_readable' (896843) panicked at crates/iouring/tests/short_read_diagnostic.rs:78:9:
+bound reader stalled for 100 ms while direct recv retrieved the queued suffix
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test ordinary_bytes_after_an_urgent_mark_remain_readable ... FAILED
+
+failures:
+
+failures:
+    ordinary_bytes_after_an_urgent_mark_remain_readable
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+error: test failed, to rerun pass `-p core-scheduler-iouring --test short_read_diagnostic`

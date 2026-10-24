@@ -1,0 +1,623 @@
+{
+  "settings": {
+    "server_cpus": [
+      0
+    ],
+    "client_cpus": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "client_binary": "/home/samuel/.cache/core-scheduler-parity/client",
+    "client_workers": 4,
+    "warmup": 0,
+    "seconds": 3
+  },
+  "events": [
+    "cycles:u",
+    "instructions:u",
+    "cycles:k",
+    "instructions:k",
+    "context-switches",
+    "cpu-migrations",
+    "syscalls:sys_enter_recvfrom",
+    "syscalls:sys_enter_sendto",
+    "syscalls:sys_enter_io_uring_enter",
+    "syscalls:sys_enter_epoll_wait",
+    "syscalls:sys_enter_epoll_pwait",
+    "syscalls:sys_enter_epoll_pwait2"
+  ],
+  "samples": [
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 36.82244873046875,
+      "requests": 1809897,
+      "requests_per_second": 603299.0,
+      "rtt_max_us": 86.207,
+      "rtt_mean_us": 52.98012451205785,
+      "rtt_p50_us": 52.863,
+      "rtt_p95_us": 55.903,
+      "rtt_p99_us": 57.439,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "baseline",
+      "repeat": 1,
+      "counters": {
+        "cycles:u": 1596137922.0,
+        "instructions:u": 3036111087.0,
+        "cycles:k": 14464296665.0,
+        "instructions:k": 27992268264.0,
+        "context-switches": 167.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 3619885.0,
+        "syscalls:sys_enter_sendto": 1809929.0,
+        "syscalls:sys_enter_io_uring_enter": 39744.0,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 25.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 881.8943409486839,
+        "instructions:u": 1677.5049005551145,
+        "cycles:k": 7991.7789050979145,
+        "instructions:k": 15466.221704329031,
+        "context-switches": 9.227044411919573e-05,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 2.0000502791042805,
+        "syscalls:sys_enter_sendto": 1.0000176805641425,
+        "syscalls:sys_enter_io_uring_enter": 0.021959260665109673,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 1.3812940736406547e-05,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 39.651875813802086,
+      "requests": 1948969,
+      "requests_per_second": 649656.3333333334,
+      "rtt_max_us": 94.143,
+      "rtt_mean_us": 49.193884509194326,
+      "rtt_p50_us": 49.087,
+      "rtt_p95_us": 52.319,
+      "rtt_p99_us": 53.887,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "short-read",
+      "repeat": 1,
+      "counters": {
+        "cycles:u": 1516043331.0,
+        "instructions:u": 3051476176.0,
+        "cycles:k": 14522237326.0,
+        "instructions:k": 27638544345.0,
+        "context-switches": 462.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1949065.0,
+        "syscalls:sys_enter_sendto": 1949001.0,
+        "syscalls:sys_enter_io_uring_enter": 41759.0,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 25.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 777.8693919708318,
+        "instructions:u": 1565.6873844581417,
+        "cycles:k": 7451.240797570408,
+        "instructions:k": 14181.110292159598,
+        "context-switches": 0.00023704840867145655,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1.0000492568121915,
+        "syscalls:sys_enter_sendto": 1.0000164189373972,
+        "syscalls:sys_enter_io_uring_enter": 0.021426200211496438,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 1.2827294841529034e-05,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 37.124959309895836,
+      "requests": 1824766,
+      "requests_per_second": 608255.3333333334,
+      "rtt_max_us": 225.535,
+      "rtt_mean_us": 52.54996853075957,
+      "rtt_p50_us": 52.447,
+      "rtt_p95_us": 55.487,
+      "rtt_p99_us": 57.087,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "baseline",
+      "repeat": 2,
+      "counters": {
+        "cycles:u": 1625295762.0,
+        "instructions:u": 3061465656.0,
+        "cycles:k": 14399076875.0,
+        "instructions:k": 28210190679.0,
+        "context-switches": 148.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 3649626.0,
+        "syscalls:sys_enter_sendto": 1824798.0,
+        "syscalls:sys_enter_io_uring_enter": 40198.0,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 21.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 890.6872234576927,
+        "instructions:u": 1677.7305451767513,
+        "cycles:k": 7890.91690386603,
+        "instructions:k": 15459.620948110607,
+        "context-switches": 8.110628979277343e-05,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 2.000051513454328,
+        "syscalls:sys_enter_sendto": 1.0000175364950903,
+        "syscalls:sys_enter_io_uring_enter": 0.02202912592628315,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 1.1508324903028663e-05,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 39.649210611979164,
+      "requests": 1948838,
+      "requests_per_second": 649612.6666666666,
+      "rtt_max_us": 219.775,
+      "rtt_mean_us": 49.19548217091415,
+      "rtt_p50_us": 49.055,
+      "rtt_p95_us": 52.351,
+      "rtt_p99_us": 53.951,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "short-read",
+      "repeat": 2,
+      "counters": {
+        "cycles:u": 1511085272.0,
+        "instructions:u": 3052145657.0,
+        "cycles:k": 14514187581.0,
+        "instructions:k": 27606836121.0,
+        "context-switches": 537.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1948934.0,
+        "syscalls:sys_enter_sendto": 1948870.0,
+        "syscalls:sys_enter_io_uring_enter": 41914.0,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 25.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 775.377569608146,
+        "instructions:u": 1566.136157546189,
+        "cycles:k": 7447.611130837966,
+        "instructions:k": 14165.79321677841,
+        "context-switches": 0.00027554881421647156,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1.0000492601232118,
+        "syscalls:sys_enter_sendto": 1.0000164200410706,
+        "syscalls:sys_enter_io_uring_enter": 0.02150717504482158,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 1.2828157086427912e-05,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 36.789754231770836,
+      "requests": 1808290,
+      "requests_per_second": 602763.3333333334,
+      "rtt_max_us": 227.455,
+      "rtt_mean_us": 53.0247285684265,
+      "rtt_p50_us": 52.895,
+      "rtt_p95_us": 55.967,
+      "rtt_p99_us": 57.567,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "baseline",
+      "repeat": 0,
+      "counters": {
+        "cycles:u": 1584402966.0,
+        "instructions:u": 3033963671.0,
+        "cycles:k": 14436045692.0,
+        "instructions:k": 27940499774.0,
+        "context-switches": 211.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 3616669.0,
+        "syscalls:sys_enter_sendto": 1808322.0,
+        "syscalls:sys_enter_io_uring_enter": 39714.0,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 23.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 876.1885350248025,
+        "instructions:u": 1677.8081342041376,
+        "cycles:k": 7983.258045999259,
+        "instructions:k": 15451.337879433055,
+        "context-switches": 0.00011668482378379575,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 2.000049217769274,
+        "syscalls:sys_enter_sendto": 1.0000176962765928,
+        "syscalls:sys_enter_io_uring_enter": 0.021962185268955752,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 1.271919880107726e-05,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 40.902547200520836,
+      "requests": 2010442,
+      "requests_per_second": 670147.3333333334,
+      "rtt_max_us": 1001.983,
+      "rtt_mean_us": 47.68450477805381,
+      "rtt_p50_us": 48.799,
+      "rtt_p95_us": 53.183,
+      "rtt_p99_us": 55.679,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "tokio",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "tokio",
+      "repeat": 1,
+      "counters": {
+        "cycles:u": 1527655490.0,
+        "instructions:u": 2892100417.0,
+        "cycles:k": 14529866740.0,
+        "instructions:k": 27885918553.0,
+        "context-switches": 128.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 2010506.0,
+        "syscalls:sys_enter_sendto": 2010474.0,
+        "syscalls:sys_enter_io_uring_enter": 0.0,
+        "syscalls:sys_enter_epoll_wait": 85079.0,
+        "syscalls:sys_enter_epoll_pwait": 0.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 759.8605132602681,
+        "instructions:u": 1438.539593283467,
+        "cycles:k": 7227.200157975211,
+        "instructions:k": 13870.54118099403,
+        "context-switches": 6.366759150475368e-05,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1.0000318337957523,
+        "syscalls:sys_enter_sendto": 1.0000159168978762,
+        "syscalls:sys_enter_io_uring_enter": 0.0,
+        "syscalls:sys_enter_epoll_wait": 0.04231855482525733,
+        "syscalls:sys_enter_epoll_pwait": 0.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 41.022359212239586,
+      "requests": 2016331,
+      "requests_per_second": 672110.3333333334,
+      "rtt_max_us": 3057.663,
+      "rtt_mean_us": 47.54604178034261,
+      "rtt_p50_us": 48.671,
+      "rtt_p95_us": 53.023,
+      "rtt_p99_us": 55.519,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "tokio",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "tokio",
+      "repeat": 2,
+      "counters": {
+        "cycles:u": 1518351685.0,
+        "instructions:u": 2900094363.0,
+        "cycles:k": 14527481939.0,
+        "instructions:k": 27966271972.0,
+        "context-switches": 113.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 2016395.0,
+        "syscalls:sys_enter_sendto": 2016363.0,
+        "syscalls:sys_enter_io_uring_enter": 0.0,
+        "syscalls:sys_enter_epoll_wait": 85067.0,
+        "syscalls:sys_enter_epoll_pwait": 0.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 753.0270005271952,
+        "instructions:u": 1438.3027206346576,
+        "cycles:k": 7204.909282751691,
+        "instructions:k": 13869.881468865975,
+        "context-switches": 5.604238589795029e-05,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1.0000317408203316,
+        "syscalls:sys_enter_sendto": 1.0000158704101658,
+        "syscalls:sys_enter_io_uring_enter": 0.0,
+        "syscalls:sys_enter_epoll_wait": 0.042189005674167585,
+        "syscalls:sys_enter_epoll_pwait": 0.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 39.691263834635414,
+      "requests": 1950905,
+      "requests_per_second": 650301.6666666666,
+      "rtt_max_us": 221.567,
+      "rtt_mean_us": 49.14479313600606,
+      "rtt_p50_us": 49.023,
+      "rtt_p95_us": 52.255,
+      "rtt_p99_us": 53.823,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "short-read",
+      "repeat": 0,
+      "counters": {
+        "cycles:u": 1512527774.0,
+        "instructions:u": 3053178150.0,
+        "cycles:k": 14510799569.0,
+        "instructions:k": 27635083921.0,
+        "context-switches": 395.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1951001.0,
+        "syscalls:sys_enter_sendto": 1950937.0,
+        "syscalls:sys_enter_io_uring_enter": 41597.0,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 20.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 775.295452110687,
+        "instructions:u": 1565.006061289504,
+        "cycles:k": 7437.983689108388,
+        "instructions:k": 14165.263772966906,
+        "context-switches": 0.00020247013565499088,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1.0000492079317036,
+        "syscalls:sys_enter_sendto": 1.0000164026439011,
+        "syscalls:sys_enter_io_uring_enter": 0.02132189932364723,
+        "syscalls:sys_enter_epoll_wait": 0.0,
+        "syscalls:sys_enter_epoll_pwait": 1.0251652438227387e-05,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 41.369242350260414,
+      "requests": 2033381,
+      "requests_per_second": 677793.6666666666,
+      "rtt_max_us": 229.247,
+      "rtt_mean_us": 47.147351210619135,
+      "rtt_p50_us": 48.223,
+      "rtt_p95_us": 52.639,
+      "rtt_p99_us": 55.135,
+      "seconds": 3.0,
+      "warmup_seconds": 0.0,
+      "backend": "tokio",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "tokio",
+      "repeat": 0,
+      "counters": {
+        "cycles:u": 1340755504.0,
+        "instructions:u": 2921031527.0,
+        "cycles:k": 14697446617.0,
+        "instructions:k": 28197583526.0,
+        "context-switches": 119.0,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 2033445.0,
+        "syscalls:sys_enter_sendto": 2033413.0,
+        "syscalls:sys_enter_io_uring_enter": 0.0,
+        "syscalls:sys_enter_epoll_wait": 83995.0,
+        "syscalls:sys_enter_epoll_pwait": 0.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      },
+      "per_request": {
+        "cycles:u": 659.3724953660923,
+        "instructions:u": 1436.5392058841899,
+        "cycles:k": 7228.082989365987,
+        "instructions:k": 13867.33894238217,
+        "context-switches": 5.852321822619568e-05,
+        "cpu-migrations": 0.0,
+        "syscalls:sys_enter_recvfrom": 1.0000314746719872,
+        "syscalls:sys_enter_sendto": 1.0000157373359937,
+        "syscalls:sys_enter_io_uring_enter": 0.0,
+        "syscalls:sys_enter_epoll_wait": 0.04130804802444795,
+        "syscalls:sys_enter_epoll_pwait": 0.0,
+        "syscalls:sys_enter_epoll_pwait2": 0.0
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 40.81548055013021,
+      "requests": 4012325,
+      "requests_per_second": 668720.8333333334,
+      "rtt_max_us": 555.007,
+      "rtt_mean_us": 47.78978301782618,
+      "rtt_p50_us": 47.615,
+      "rtt_p95_us": 51.039,
+      "rtt_p99_us": 52.991,
+      "seconds": 6.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "short-read",
+      "binary_sha256": "e1e83c65722157fe11dfce2b37718379486b649f57d18f249d0876a6af8fa577"
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 43.270904541015625,
+      "requests": 4253703,
+      "requests_per_second": 708950.5,
+      "rtt_max_us": 215.807,
+      "rtt_mean_us": 45.07610959486356,
+      "rtt_p50_us": 46.047,
+      "rtt_p95_us": 50.655,
+      "rtt_p99_us": 53.279,
+      "seconds": 6.0,
+      "warmup_seconds": 0.0,
+      "backend": "tokio",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "tokio",
+      "binary_sha256": "7746deee96ca2e0c7b22be167c12d837031562a1374dad6453297ec5c04b2969"
+    },
+    {
+      "bytes": 64,
+      "connections": 32,
+      "payload_mib_per_second": 38.467325846354164,
+      "requests": 3781492,
+      "requests_per_second": 630248.6666666666,
+      "rtt_max_us": 560.639,
+      "rtt_mean_us": 50.706865200561126,
+      "rtt_p50_us": 50.527,
+      "rtt_p95_us": 53.951,
+      "rtt_p99_us": 56.031,
+      "seconds": 6.0,
+      "warmup_seconds": 0.0,
+      "backend": "iouring-monitor",
+      "workers": 1,
+      "client_workers": 4,
+      "server_cpus": [
+        0
+      ],
+      "client_cpus": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "variant": "baseline",
+      "binary_sha256": "7746deee96ca2e0c7b22be167c12d837031562a1374dad6453297ec5c04b2969"
+    }
+  ]
+}
