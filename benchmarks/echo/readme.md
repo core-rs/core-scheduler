@@ -6,6 +6,8 @@ Compare pure Tokio, `TokioScheduler`, and `NativeScheduler<IoUringSelector>` usi
 
 The [initial Aiko results](results.md) include throughput, latency, variation across repetitions, and raw samples.
 
+The [Native completion profiles](native-profiling.md) separate conservative readiness from kernel task-work costs and evaluate deferred completion processing, including its unresolved low-load latency tradeoff.
+
 The [Native monitor polling investigation](native-monitor.md) measures syscall-first resumption and records the rejected monitor-bookkeeping and ring-send experiments.
 
 The [Tokio future-construction comparison](tokio-future-construction.md) measures eliminating intermediate operation-state copies while preserving cancellation and readiness behavior.

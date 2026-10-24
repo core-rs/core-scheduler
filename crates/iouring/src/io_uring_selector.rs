@@ -905,14 +905,25 @@ impl Reactor {
     }
 
     pub(crate) fn bind_worker(&mut self) {
-        // Cooperative task work belongs to its submitting thread. Enable it only for a never-driven ring after its owner becomes thread-bound; a movable driver must keep the default interrupt behavior.
+        // Deferred and cooperative task work belong to their submitting thread. Enable them only for a never-driven ring after its owner becomes thread-bound; a movable driver must keep the default interrupt behavior.
         if !self.started {
-            if let Ok(ring) = syscall("cooperative-ring", || {
+            let entries = self.ring.params().sq_entries();
+            let ring = syscall("deferred-ring", || {
                 IoUring::builder()
-                    .setup_coop_taskrun()
+                    .setup_single_issuer()
+                    .setup_defer_taskrun()
                     .setup_taskrun_flag()
-                    .build(self.ring.params().sq_entries())
-            }) {
+                    .build(entries)
+            })
+            .or_else(|_| {
+                syscall("cooperative-ring", || {
+                    IoUring::builder()
+                        .setup_coop_taskrun()
+                        .setup_taskrun_flag()
+                        .build(entries)
+                })
+            });
+            if let Ok(ring) = ring {
                 // Setup already validated this kernel's operations and completion features. No request or notification has reached the old ring, and queued commands remain on the controller. Failure to obtain this optional replacement leaves the original valid ring intact.
                 self.ring = ring;
             }
@@ -1297,7 +1308,18 @@ impl Reactor {
                     || submissions.taskrun()
             };
             if needs_submit {
-                match syscall("submit", || self.ring.submit()) {
+                let count = self.ring.submission().len() as u32;
+                match syscall("submit", || {
+                    // SAFETY: This exclusive ring owner has published every SQ entry with its retained resources. GETEVENTS runs deferred completion work without blocking when the minimum is zero; no signal-mask pointer is supplied. Request it explicitly because older supported io-uring versions omit it from submit() when only task work is pending.
+                    unsafe {
+                        self.ring.submitter().enter::<libc::sigset_t>(
+                            count,
+                            0,
+                            io_uring::EnterFlags::GETEVENTS.bits(),
+                            None,
+                        )
+                    }
+                }) {
                     Err(error)
                         if error.kind() == io::ErrorKind::Interrupted
                             || matches!(error.raw_os_error(), Some(libc::EBUSY | libc::EAGAIN)) =>

@@ -1,0 +1,69 @@
+diff --git a/crates/native/src/worker.rs b/crates/native/src/worker.rs
+index 9862749..82e1b9b 100644
+--- a/crates/native/src/worker.rs
++++ b/crates/native/src/worker.rs
+@@ -56,6 +56,7 @@ struct LocalWorker {
+     scheduler: Weak<Shared>,
+     ready: Worker<Runnable>,
+     current: Worker<Runnable>,
++    running_tasks: bool,
+     timers: core_scheduler_timers::local::TimerQueue<Waker>,
+ }
+ 
+@@ -94,23 +95,26 @@ pub(crate) fn timers<T>(
+ 
+ pub(crate) fn schedule(shared: &Arc<Shared>, runnable: Runnable) {
+     let preferred = runnable.metadata().worker.load(Ordering::Relaxed);
+-    let remote = CURRENT_WORKER.with(|current| {
++    let (remote, wake_idle) = CURRENT_WORKER.with(|current| {
+         let current = current.borrow();
+         if let Some(worker) = current.as_ref() {
+             if std::ptr::eq(worker.scheduler.as_ptr(), Arc::as_ptr(shared))
+                 && preferred == worker.identifier
+             {
++                let wake_idle = worker.running_tasks || !worker.ready.is_empty();
+                 worker.ready.push(runnable);
+-                return None;
++                return (None, wake_idle);
+             }
+         }
+-        Some(runnable)
++        (Some(runnable), true)
+     });
+     if let Some(runnable) = remote {
+         shared.workers[preferred].incoming.push(runnable);
+     }
+     // Publication precedes the sleeping flag exchange. A worker publishes its sleeping flag before rechecking queues, so a racing wake is retained.
+-    shared.wake_idle(preferred);
++    if wake_idle {
++        shared.wake_idle(preferred);
++    }
+ }
+ 
+ fn search(shared: &Shared, local: &LocalWorker, iteration: usize) -> Steal<Runnable> {
+@@ -263,6 +267,7 @@ fn run_loop(
+             scheduler: Arc::downgrade(&shared),
+             ready,
+             current,
++            running_tasks: false,
+             timers: core_scheduler_timers::local::TimerQueue::with_capacity(shared.timer_capacity),
+         }))
+     });
+@@ -318,6 +323,7 @@ fn run_ready_batch(shared: &Shared, first: Runnable) {
+     let (identifier, has_more) = CURRENT_WORKER.with(|current| {
+         let mut current = current.borrow_mut();
+         let local = current.as_mut().expect("worker context is installed");
++        local.running_tasks = true;
+         std::mem::swap(&mut local.ready, &mut local.current);
+         (local.identifier, !local.current.is_empty())
+     });
+@@ -341,6 +347,9 @@ fn run_ready_batch(shared: &Shared, first: Runnable) {
+                 .pop()
+         });
+     }
++    CURRENT_WORKER.with(|current| {
++        current.borrow_mut().as_mut().expect("worker context is installed").running_tasks = false;
++    });
+ }
+ 
+ #[cfg(test)]

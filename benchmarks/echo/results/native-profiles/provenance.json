@@ -1,0 +1,30 @@
+{
+  "base": "9cef9ac07686c2bdebc4307999403b9841363942",
+  "implementation": "6e52b133a7959ac409476a0555d4254daabefa09",
+  "build": "CARGO_PROFILE_RELEASE_DEBUG=1 cargo build --release --locked -p core-scheduler-echo-benchmark",
+  "variants": {
+    "baseline": "base + baseline/control.patch (diagnostic Tokio mode only)",
+    "deferred": "base + baseline/control.patch + deferred.patch",
+    "collect": "base + baseline/control.patch + deferred-collect.patch",
+    "final": "implementation, without the diagnostic benchmark change",
+    "local": "implementation + local-wake.patch (rejected prototype; not retained)"
+  },
+  "client": {
+    "path": "/home/samuel/Developer/core-rs/core-scheduler-monoio-echo/target/release/core-scheduler-echo-benchmark",
+    "sha256": "c72f7aea7151fb83020b096cfdaccc46a70b0eeff6bbb0a0e4ea4157d1aeb071"
+  },
+  "method": "All builds, measurements and remote validation serialized with /tmp/core-scheduler-perf.lock. Servers pinned to CPUs 0..workers-1; fixed client uses CPUs 4-7, four workers. Randomized controls use 1s warmup + 3s measurement; counters use zero warmup + 3s; profiles use 1s + 5s. Do not treat instrumented throughput as a capacity result.",
+  "result_labels": "The final label in deferred-matrix and deferred-profiles identifies the tested 6e52b13 prototype; it is not a merge recommendation.",
+  "experiments": {
+    "baseline": "24 throughput controls, 8 counter samples, 4 cycle profiles",
+    "deferred-comparison": "30 controls, 5 per case",
+    "collect-comparison": "18 controls, 3 per case",
+    "deferred-matrix": "120 controls, 5 per case",
+    "deferred-profiles": "8 counter samples, 4 cycle profiles",
+    "latency-comparison": "30 controls, 5 per case",
+    "latency-profiles": "6 counter samples, 3 cycle profiles",
+    "local-wake-comparison": "36 controls, 3 per case",
+    "performance-policy": "36 controls, 3 per case; temporary performance governor, restored",
+    "idle-latency": "18 controls, 3 per case; temporary /dev/cpu_dma_latency request, released"
+  }
+}

@@ -1,0 +1,19 @@
+# started on Sat Oct 24 13:10:39 2026
+
+3001.33;msec;task-clock;3001329128;100.00;;
+1620537848;;cycles:u;3001329128;100.00;;
+14444944145;;cycles:k;3001329128;100.00;;
+3246590104;;instructions:u;3001329128;100.00;;
+30185506107;;instructions:k;3001329128;100.00;;
+112;;context-switches;3001329128;100.00;;
+2;;cpu-migrations;3001329128;100.00;;
+3790584;;syscalls:sys_enter_recvfrom;3001329128;100.00;;
+1895283;;syscalls:sys_enter_sendto;3001329128;100.00;;
+0;;syscalls:sys_enter_io_uring_enter;3001329128;100.00;;
+78;;syscalls:sys_enter_epoll_ctl;3001329128;100.00;;
+71942;;syscalls:sys_enter_epoll_wait;3001329128;100.00;;
+0;;syscalls:sys_enter_epoll_pwait;3001329128;100.00;;
+30;;syscalls:sys_enter_read;3001329128;100.00;;
+32;;syscalls:sys_enter_write;3001329128;100.00;;
+70;;syscalls:sys_enter_futex;3001329128;100.00;;
+1895269;;syscalls:sys_exit_recvfrom;3001329128;100.00;;

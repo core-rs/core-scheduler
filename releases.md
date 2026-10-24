@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Batch io_uring completion work at thread-bound worker turns using deferred task running where supported, retaining cooperative and ordinary ring fallbacks and explicit nonblocking progress.
+
 - Retry io_uring monitor I/O directly on wake, keeping readiness bookkeeping on the `WouldBlock` path while preserving cancellation and owned registration lifetimes.
 
 - Avoid intermediate future-state copies when constructing Tokio socket operations, preserving the existing cancellation and readiness behavior.

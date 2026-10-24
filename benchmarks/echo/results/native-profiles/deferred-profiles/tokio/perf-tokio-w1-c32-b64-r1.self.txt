@@ -1,0 +1,189 @@
+# ========
+# captured on    : Sat Oct 24 13:11:02 2026
+# header version : 1
+# data offset    : 520
+# data size      : 51242936
+# feat offset    : 51243456
+# hostname : aiko
+# os release : 7.2.8-arch1-2
+# perf version : 7.2.8-2
+# arch : x86_64
+# nrcpus online : 32
+# nrcpus avail : 32
+# cpudesc : AMD Ryzen 9 9950X3D 16-Core Processor
+# cpuid : AuthenticAMD,26,68,0
+# total memory : 48436228 kB
+# cmdline : /usr/bin/perf
+# event : name = cycles, , id = { 2827, 2828, 2829, 2830, 2831, 2832, 2833, 2834, 2835, 2836, 2837, 2838, 2839, 2840, 2841, 2842, 2843, 2844, 2845, 2846, 2847, 2848, 2849, 2850, 2851, 2852, 2853, 2854, 2855, 2856, 2857, 2858 }, type = 0 (PERF_TYPE_HARDWARE), size = 144, config = 0 (PERF_COUNT_HW_CPU_CYCLES), { sample_period, sample_freq } = 999, sample_type = IP|TID|TIME|CALLCHAIN|PERIOD|REGS_USER|STACK_USER, read_format = ID|LOST, disabled = 1, inherit = 1, mmap = 1, comm = 1, freq = 1, enable_on_exec = 1, task = 1, mmap_data = 1, sample_id_all = 1, exclude_callchain_user = 1, mmap2 = 1, comm_exec = 1, ksymbol = 1, bpf_event = 1, build_id = 1, sample_regs_user = 0xff0fff, sample_stack_user = 8192
+# CPU_TOPOLOGY info available, use -I to display
+# NUMA_TOPOLOGY info available, use -I to display
+# pmu mappings: cpu = 4, amd_iommu_0 = 12, breakpoint = 5, drm_amdgpu = 4294836224, hwmon_amdgpu = 4294901762, hwmon_asus = 4294901769, hwmon_asusec = 4294901765, hwmon_eno2 = 4294901768, hwmon_iwlwifi_1 = 4294901770, hwmon_k10temp = 4294901764, hwmon_nct6799 = 4294901763, hwmon_nvme = 4294901760, hwmon_nvme = 4294901761, hwmon_spd5118 = 4294901766, hwmon_spd5118 = 4294901767, ibs_fetch = 10, ibs_op = 11, kprobe = 8, msr = 13, power = 14, power_core = 15, software = 1, tool = 4294967294, tracepoint = 2, uprobe = 9
+# CACHE info available, use -I to display
+# time of first sample : 49645.393945
+# time of last sample : 49651.397085
+# sample duration :   6003.140 ms
+# MEM_TOPOLOGY info available, use -I to display
+# bpf_prog_info 24: bpf_prog_31efb7c56239148b_restrict_filesystems addr 0xffffffffc0085ad0 size 294
+# bpf_prog_info 47:
+# 	sub_prog 0: bpf_prog_9d21028d4f3abb5d_sysctl_monitor addr 0xffffffffc0090bf0 size 688
+# 	sub_prog 1: bpf_prog_417237dd50306dd0_cut_last addr 0xffffffffc0090ef0 size 109
+# bpf_prog_info 63: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a6834 size 64
+# bpf_prog_info 64: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a6888 size 64
+# bpf_prog_info 69: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a143c size 64
+# bpf_prog_info 70: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a14a0 size 64
+# bpf_prog_info 71: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a1518 size 268
+# bpf_prog_info 72: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a1660 size 268
+# bpf_prog_info 73: bpf_prog_feaab199760324c9_sd_devices addr 0xffffffffc00a1794 size 319
+# bpf_prog_info 74: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a1934 size 64
+# bpf_prog_info 75: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a19b0 size 64
+# bpf_prog_info 76: bpf_prog_feaab199760324c9_sd_devices addr 0xffffffffc00a1a1c size 319
+# bpf_prog_info 77: bpf_prog_98b7b6f166b26c8a_sd_devices addr 0xffffffffc00a1ba8 size 111
+# bpf_prog_info 78: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a1c5c size 268
+# bpf_prog_info 79: bpf_prog_71bba91db5466642_sd_devices addr 0xffffffffc00a1d90 size 490
+# bpf_prog_info 80: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a1fe4 size 64
+# bpf_prog_info 81: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a2050 size 64
+# bpf_prog_info 82: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00a20e8 size 64
+# bpf_prog_info 83: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc00a215c size 64
+# bpf_prog_info 84: bpf_prog_c1591dae5f5bcd9f_sd_devices addr 0xffffffffc00a21d0 size 298
+# bpf_prog_info 85: bpf_prog_c1591dae5f5bcd9f_sd_devices addr 0xffffffffc00a2358 size 298
+# bpf_prog_info 86: bpf_prog_a97c143260cd9940_sd_devices addr 0xffffffffc00a24e8 size 268
+# bpf_prog_info 88: bpf_prog_772db7720b2728e9_sd_fw_egress addr 0xffffffffc00858f4 size 64
+# bpf_prog_info 89: bpf_prog_772db7720b2728e9_sd_fw_ingress addr 0xffffffffc0085960 size 64
+# btf info of id 33
+# btf info of id 132
+# cpu pmu capabilities: branches=16, max_precise=0
+# ibs_fetch pmu capabilities: zen4_ibs_extensions=1
+# ibs_op pmu capabilities: zen4_ibs_extensions=1, ldlat=1, dtlb_pgsize=1
+# AMD systems uses ibs_op// PMU for some precise events, e.g.: cycles:p, see the 'perf list' man page for further details.
+# CPU_DOMAIN_INFO info available, use -I to display
+# e_machine : 62
+#   e_flags : 0
+# cacheline size: 64
+# missing features: TRACING_DATA BUILD_ID BRANCH_STACK GROUP_DESC AUXTRACE STAT CLOCKID DIR_FORMAT COMPRESSED CLOCK_DATA HYBRID_TOPOLOGY
+# ========
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 6K of event 'cycles'
+# Event count (approx.): 32307992691
+#
+# Overhead       Samples  Symbol                                                                                                                                                                                    IPC   [IPC Coverage]
+# ........  ............  ........................................................................................................................................................................................  ....................
+#
+     5.64%           338  [k] skb_release_data                                                                                                                                                                      -      -
+     4.12%           247  [k] fdget                                                                                                                                                                                 -      -
+     3.95%           237  [k] fput                                                                                                                                                                                  -      -
+     3.37%           202  [k] __inet_lookup_established                                                                                                                                                             -      -
+     2.99%           179  [.] <tokio::runtime::io::scheduled_io::ScheduledIo>::poll_readiness                                                                                                                       -      -
+     2.59%           155  [k] tcp_sendmsg_locked                                                                                                                                                                    -      -
+     2.55%           153  [k] _raw_spin_lock_bh                                                                                                                                                                     -      -
+     2.47%           148  [k] kfree_skbmem                                                                                                                                                                          -      -
+     2.35%           141  [k] lock_sock_nested                                                                                                                                                                      -      -
+     2.35%           141  [k] tcp_v4_rcv                                                                                                                                                                            -      -
+     2.32%           139  [k] _raw_spin_lock_irqsave                                                                                                                                                                -      -
+     2.31%           138  [k] sock_rfree                                                                                                                                                                            -      -
+     2.25%           135  [k] _raw_spin_lock_irq                                                                                                                                                                    -      -
+     2.10%           126  [k] dst_release                                                                                                                                                                           -      -
+     2.09%           125  [k] sock_def_readable                                                                                                                                                                     -      -
+     2.02%           121  [k] tcp_wfree                                                                                                                                                                             -      -
+     2.02%           121  [k] tcp_rcv_established                                                                                                                                                                   -      -
+     2.01%           120  [k] 0x0000000000003dcd                                                                                                                                                                    -      -
+     2.00%           119  [k] skb_defer_free_flush                                                                                                                                                                  -      -
+     1.93%           116  [k] __copy_skb_header                                                                                                                                                                     -      -
+     1.69%           101  [k] __dev_queue_xmit                                                                                                                                                                      -      -
+     1.60%            94  [k] ip_send_check                                                                                                                                                                         -      -
+     1.39%            83  [k] skb_attempt_defer_free                                                                                                                                                                -      -
+     1.30%            78  [k] skb_page_frag_refill                                                                                                                                                                  -      -
+     1.23%            74  [k] ktime_get_with_offset                                                                                                                                                                 -      -
+     1.23%            74  [k] tcp_event_new_data_sent                                                                                                                                                               -      -
+     1.18%            71  [k] tcp_poll                                                                                                                                                                              -      -
+     1.17%            70  [k] entry_SYSCALL_64                                                                                                                                                                      -      -
+     1.13%            68  [k] __check_object_size                                                                                                                                                                   -      -
+     1.07%            64  [.] <tokio::net::tcp::stream::TcpStream>::poll_read_priv                                                                                                                                  -      -
+     1.04%            60  [k] tcp_ack                                                                                                                                                                               -      -
+     0.98%            59  [k] _raw_spin_lock                                                                                                                                                                        -      -
+     0.98%            57  [k] skb_clone                                                                                                                                                                             -      -
+     0.95%            57  [k] _copy_to_iter                                                                                                                                                                         -      -
+     0.93%            56  [k] __siphash_unaligned                                                                                                                                                                   -      -
+     0.93%            56  [k] kmem_cache_alloc_node_noprof                                                                                                                                                          -      -
+     0.88%            53  [k] __skb_datagram_iter                                                                                                                                                                   -      -
+     0.88%            53  [k] 0x0000000000003cbe                                                                                                                                                                    -      -
+     0.87%            52  [.] <tokio::runtime::scheduler::multi_thread::worker::Context>::run                                                                                                                       -      -
+     0.83%            49  [k] memset                                                                                                                                                                                -      -
+     0.80%            48  [k] tcp_rcv_space_adjust                                                                                                                                                                  -      -
+     0.78%            47  [k] ip_finish_output2                                                                                                                                                                     -      -
+     0.75%            45  [k] __tcp_transmit_skb                                                                                                                                                                    -      -
+     0.67%            40  [.] tokio::runtime::task::waker::wake_by_val                                                                                                                                              -      -
+     0.63%            38  [.] <tokio::runtime::io::scheduled_io::ScheduledIo>::wake                                                                                                                                 -      -
+     0.62%            37  [k] tcp_tso_segs                                                                                                                                                                          -      -
+     0.58%            35  [k] 0x00000000000047eb                                                                                                                                                                    -      -
+     0.53%            32  [.] <tokio::runtime::task::state::State>::transition_to_idle                                                                                                                              -      -
+     0.53%            32  [k] net_rx_action                                                                                                                                                                         -      -
+     0.50%            30  [k] native_queued_spin_lock_slowpath                                                                                                                                                      -      -
+     0.48%            29  [k] ep_item_poll.isra.0                                                                                                                                                                   -      -
+     0.47%            28  [k] tcp_queue_rcv                                                                                                                                                                         -      -
+     0.45%            27  [.] <tokio::runtime::task::state::State>::transition_to_running                                                                                                                           -      -
+     0.38%            23  [k] __alloc_skb                                                                                                                                                                           -      -
+     0.38%            23  [k] 0x0000000000009b24                                                                                                                                                                    -      -
+     0.38%            23  [k] native_sched_clock                                                                                                                                                                    -      -
+     0.38%            23  [.] <tokio::runtime::io::driver::Driver>::turn                                                                                                                                            -      -
+     0.37%            22  [k] tcp_update_pacing_rate                                                                                                                                                                -      -
+     0.35%            21  [k] sock_poll                                                                                                                                                                             -      -
+     0.35%            21  [k] 0x0000000000003ca7                                                                                                                                                                    -      -
+     0.35%            21  [.] <tokio::runtime::task::state::State>::transition_to_notified_by_val                                                                                                                   -      -
+     0.33%            20  [k] __ip_queue_xmit                                                                                                                                                                       -      -
+     0.32%            19  [k] __smp_call_single_queue                                                                                                                                                               -      -
+     0.30%            18  [.] __vdso_clock_gettime                                                                                                                                                                  -      -
+     0.25%            15  [k] tcp_skb_entail                                                                                                                                                                        -      -
+     0.25%            15  [k] nf_hook_slow                                                                                                                                                                          -      -
+     0.25%            15  [k] ip_rcv_finish_core                                                                                                                                                                    -      -
+     0.23%            14  [k] call_function_single_prep_ipi                                                                                                                                                         -      -
+     0.23%            14  [.] send                                                                                                                                                                                  -      -
+     0.22%            13  [k] cubictcp_cwnd_event_tx_start                                                                                                                                                          -      -
+     0.22%            13  [k] do_syscall_64                                                                                                                                                                         -      -
+     0.22%            13  [k] choose_idle_cpu                                                                                                                                                                       -      -
+     0.21%            12  [.] tokio::runtime::task::waker::clone_waker                                                                                                                                              -      -
+     0.20%            12  [k] __rcu_read_unlock                                                                                                                                                                     -      -
+     0.20%            12  [k] cubictcp_cong_avoid                                                                                                                                                                   -      -
+     0.18%            11  [k] select_task_rq_fair                                                                                                                                                                   -      -
+     0.18%            11  [k] try_to_wake_up                                                                                                                                                                        -      -
+     0.18%            11  [k] sk_forced_mem_schedule                                                                                                                                                                -      -
+     0.17%            10  [k] _copy_from_iter                                                                                                                                                                       -      -
+     0.17%            10  [k] __sys_sendto                                                                                                                                                                          -      -
+     0.17%            10  [k] ep_poll_callback                                                                                                                                                                      -      -
+     0.17%            10  [k] __rcu_read_lock                                                                                                                                                                       -      -
+     0.17%            10  [k] 0x0000000000009b5c                                                                                                                                                                    -      -
+     0.15%             9  [k] default_send_IPI_single_phys                                                                                                                                                          -      -
+     0.15%             9  [k] entry_SYSCALL_64_safe_stack                                                                                                                                                           -      -
+     0.15%             9  [k] __mod_timer                                                                                                                                                                           -      -
+     0.15%             9  [k] tcp_rearm_rto                                                                                                                                                                         -      -
+     0.13%             8  [k] rb_insert_color                                                                                                                                                                       -      -
+     0.13%             8  [k] __ip_local_out                                                                                                                                                                        -      -
+     0.13%             8  [k] __virt_addr_valid                                                                                                                                                                     -      -
+     0.13%             8  [k] 0x00000000000032b4                                                                                                                                                                    -      -
+     0.13%             8  [k] 0x000000000000420d                                                                                                                                                                    -      -
+     0.13%             8  [k] 0x0000000000009b2d                                                                                                                                                                    -      -
+     0.13%             8  [k] handle_softirqs                                                                                                                                                                       -      -
+     0.13%             8  [k] 0x00000000000090e4                                                                                                                                                                    -      -
+     0.12%             7  [k] 0x0000000000004212                                                                                                                                                                    -      -
+     0.12%             7  [k] ktime_get                                                                                                                                                                             -      -
+     0.12%             8  [k] __mod_memcg_state                                                                                                                                                                     -      -
+     0.12%             7  [k] __sk_dst_check                                                                                                                                                                        -      -
+     0.12%             7  [k] import_ubuf                                                                                                                                                                           -      -
+     0.12%             7  [k] mutex_unlock                                                                                                                                                                          -      -
+     0.12%             7  [k] ttwu_queue_wakelist                                                                                                                                                                   -      -
+     0.12%             7  [k] process_backlog                                                                                                                                                                       -      -
+     0.10%             6  [.] <tokio::runtime::scheduler::multi_thread::worker::Context>::run_task                                                                                                                  -      -
+     0.10%             6  [k] ip_skb_dst_mtu                                                                                                                                                                        -      -
+     0.10%             6  [k] 0x0000000000004786                                                                                                                                                                    -      -
+     0.10%             6  [k] try_charge_memcg                                                                                                                                                                      -      -
+     0.10%             6  [k] ip_local_deliver                                                                                                                                                                      -      -
+     0.10%             6  [k] kmalloc_reserve                                                                                                                                                                       -      -
+     0.10%             6  [k] ip_rcv                                                                                                                                                                                -      -
+     0.10%             6  [k] 0x0000000000003a94                                                                                                                                                                    -      -
+
+
+#
+# (Tip: To show information about system the samples were collected on use perf report --header)
+#
