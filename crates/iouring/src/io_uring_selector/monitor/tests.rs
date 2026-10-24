@@ -1294,6 +1294,8 @@ fn abandoning_a_child_wait_does_not_retain_its_parent_task() {
     struct Task {
         future: Mutex<Option<Pin<Box<dyn Future<Output = ()> + Send>>>>,
     }
+    // The waker must own this task's future to expose a retained-waker cycle.
+    #[allow(clippy::manual_noop_waker)]
     impl std::task::Wake for Task {
         fn wake(self: Arc<Self>) {}
     }

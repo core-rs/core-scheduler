@@ -158,6 +158,68 @@ fn unpublished_receive_is_rejected_when_its_driver_disappears() {
 }
 
 #[test]
+fn cached_reads_keep_active_ring_ownership_and_rebind_after_retirement() {
+    let (selector, mut drivers) = IoUringSelector::with_workers(Default::default(), 2).unwrap();
+    let (socket, mut peer) = sockets(&selector);
+    let mut first = drivers.remove(0).enter();
+    let wake = first.waker();
+    let mut context = Context::from_waker(&wake);
+    let never = Cancellation::never();
+    let cancellation = Cancellation::new();
+    let mut reader = selector.socket_stream_reader(&socket).unwrap();
+    peer.write_all(b"warm").unwrap();
+    let (result, buffer) = drive(
+        &mut first,
+        &mut context,
+        pin!(reader.read_owned(vec![0; 16], &never)),
+    );
+    assert_eq!(result.unwrap(), 4);
+
+    let mut reading = Box::pin(reader.read_owned(buffer, &cancellation));
+    assert!(reading.as_mut().poll(&mut context).is_pending());
+    first.turn(Some(Duration::ZERO)).unwrap();
+    // Installing another worker changes TLS routing without changing the accepted operation's ring. Its cancellation must still retire on the first ring.
+    let mut second = drivers.pop().unwrap().enter();
+    let wake = second.waker();
+    let mut context = Context::from_waker(&wake);
+    cancellation.cancel();
+    assert!(reading.as_mut().poll(&mut context).is_pending());
+    assert_eq!(
+        selector.controllers[1]
+            .capacity
+            .state
+            .load(Ordering::Acquire),
+        0
+    );
+    let (result, buffer) = drive(&mut first, &mut context, reading.as_mut());
+    assert!(matches!(result, Err(OperationError::Cancelled(_))));
+    drop(reading);
+
+    peer.write_all(b"next").unwrap();
+    let mut reading = Box::pin(reader.read_owned(buffer, &never));
+    assert!(reading.as_mut().poll(&mut context).is_pending());
+    assert_eq!(
+        selector.controllers[0]
+            .capacity
+            .state
+            .load(Ordering::Acquire),
+        0
+    );
+    assert_eq!(
+        selector.controllers[1]
+            .capacity
+            .state
+            .load(Ordering::Acquire),
+        1
+    );
+    let (result, buffer) = drive(&mut second, &mut context, reading.as_mut());
+    assert_eq!(result.unwrap(), 4);
+    assert_eq!(&buffer[..4], b"next");
+    drop(reading);
+    drive(&mut second, &mut context, pin!(reader.close())).unwrap();
+}
+
+#[test]
 fn completion_during_waker_registration_is_collected_without_another_poll() {
     use std::task::{RawWaker, RawWakerVTable, Waker};
 
