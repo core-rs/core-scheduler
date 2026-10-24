@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Reduce Native socket readiness bookkeeping and route ownership overhead, process completions before freezing ready batches, and reuse io\_uring owned stream-read requests and completion storage after warmup. Preserve cancellation, abandoned-operation cleanup, and original-ring retirement across worker migration.
+- Reduce Native socket readiness bookkeeping and route ownership overhead, and reuse io\_uring owned stream-read requests and completion storage after warmup. Preserve cancellation, abandoned-operation cleanup, and original-ring retirement across worker migration.
 
 - Fold socket and file I/O into bound reader/writer capabilities and remove the public backend hooks, monitors, receivers, and generic handle wrappers. Preserve explicit flags, owned vectored transfers, and separate file admission/completion as resource methods; keep registration and retirement state private to adapters.
 
