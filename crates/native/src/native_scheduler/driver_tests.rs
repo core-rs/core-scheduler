@@ -28,6 +28,7 @@ struct State {
     idle: AtomicBool,
     batches: AtomicUsize,
     turns: AtomicUsize,
+    published_at: AtomicUsize,
     dropped: AtomicUsize,
     retired: AtomicBool,
     only_idle_completions: AtomicBool,
@@ -74,7 +75,7 @@ impl SelectorWorker for Driver {
         self.0.closed.store(true, Ordering::SeqCst);
     }
     fn turn(&mut self, timeout: Option<Duration>) -> io::Result<bool> {
-        self.0.turns.fetch_add(1, Ordering::SeqCst);
+        let turn = self.0.turns.fetch_add(1, Ordering::SeqCst) + 1;
         if self.0.failed.load(Ordering::SeqCst) {
             self.0.retired.store(true, Ordering::SeqCst);
             return Err(io::Error::other("driver failure"));
@@ -86,6 +87,7 @@ impl SelectorWorker for Driver {
             let batch = std::mem::take(&mut *self.0.queued.lock().unwrap());
             if !batch.is_empty() {
                 self.0.inside_turn.store(true, Ordering::SeqCst);
+                self.0.published_at.store(turn, Ordering::SeqCst);
                 let interrupts = self.0.interrupts.load(Ordering::SeqCst);
                 for sender in batch {
                     let _ = sender.send(());
@@ -179,6 +181,11 @@ fn idle_completions_resume_tasks_without_interrupting_their_own_worker() {
                 for _ in 0..32 {
                     observed.operation().await.unwrap();
                     assert!(!observed.inside_turn.load(Ordering::SeqCst));
+                    assert_eq!(
+                        observed.turns.load(Ordering::SeqCst),
+                        observed.published_at.load(Ordering::SeqCst),
+                        "idle completion must resume its consumer before another driver turn"
+                    );
                 }
                 42
             })

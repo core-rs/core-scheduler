@@ -267,6 +267,7 @@ fn run_loop(
         }))
     });
     let mut iteration = 0usize;
+    let mut driven = false;
     loop {
         iteration = iteration.wrapping_add(1);
         crate::worker_timers::turn(&shared, identifier);
@@ -296,7 +297,8 @@ fn run_loop(
                         drive(
                             &mut driver,
                             crate::worker_timers::timeout(&shared, identifier),
-                        )
+                        );
+                        driven = true;
                     },
                 )
             }
@@ -305,9 +307,12 @@ fn run_loop(
         let Some(runnable) = runnable else {
             continue;
         };
-        // Publish completions before freezing a runnable batch. If no task is ready, the idle path can submit and wait in one driver turn.
-        drive(&mut driver, Some(Duration::ZERO));
+        // Each batch follows a driver turn. An idle wait already provides that turn.
+        if !driven {
+            drive(&mut driver, Some(Duration::ZERO));
+        }
         run_ready_batch(&shared, runnable);
+        driven = false;
     }
     CURRENT_WORKER.with(|current| current.take());
 }
